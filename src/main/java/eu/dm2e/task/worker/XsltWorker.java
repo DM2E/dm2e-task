@@ -2,9 +2,8 @@ package eu.dm2e.task.worker;
 
 import java.io.IOException;
 
-import org.apache.log4j.Logger;
-
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConsumerCancelledException;
 import com.rabbitmq.client.QueueingConsumer;
 import com.rabbitmq.client.ShutdownSignalException;
@@ -18,11 +17,8 @@ public class XsltWorker extends AbstractWorker {
 	
 	@Override
 	public void doWork() throws IOException, ShutdownSignalException, ConsumerCancelledException, InterruptedException {
-		Logger log = Logger.getLogger(getClass().getName());
-		setupDbConnections();
-		
-		Channel channel = getRabbitChannel();
-		
+		Connection rabbit = getRabbitConnection();
+		Channel channel = rabbit.createChannel();
 		QueueingConsumer consumer = new QueueingConsumer(channel);
 		channel.basicConsume(getRabbitQueueName(), true, consumer);
 		System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
@@ -31,6 +27,8 @@ public class XsltWorker extends AbstractWorker {
 			String message = new String(delivery.getBody());
 			System.out.println(" [x] Received '" + message + "'");
 		}	
+//		channel.close();
+//		rabbit.close();
 	}
 
 	

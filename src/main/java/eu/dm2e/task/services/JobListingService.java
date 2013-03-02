@@ -12,12 +12,15 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 import javax.ws.rs.GET;
-import javax.ws.rs.PUT;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 
+import org.jongo.Jongo;
 import org.jongo.MongoCollection;
 
 import eu.dm2e.task.model.Job;
@@ -33,37 +36,45 @@ public class JobListingService extends AbstractTaskService {
 	
 	@GET
 	@Path("/{id}")
-	@Produces("application/json")
-	public Response getJob(@PathParam("image") String id) {
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response getJob(@PathParam("id") String id) throws IOException {
+		Job retrievedJob;
+		
+		Jongo jongo = getMongoConnection();
+	    MongoCollection jobs = jongo.getCollection("jobs");
 		try {
-			this.setupDbConnections();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			retrievedJob = jobs.findOne().as(Job.class);
+		} catch (IllegalArgumentException e) {
+			closeMongoConnection(jongo);
+			return Response.status(400).entity("Error: Malformed job ID").build();
+		} 
+		closeMongoConnection(jongo);
+		
+		if (null == retrievedJob) {
+			return Response.status(404).entity("Error: No such job").build();
 		}
 		
-		
-	    MongoCollection jobs = getMongoConnection().getCollection("jobs");
-		Job retrievedJob = jobs.findOne("{status: 'NOT_STARTED'}").as(Job.class);
-//	    log.warning(retrievedJob.get_id())
-		return Response.ok(retrievedJob.get_id()).build();
-		
+		ResponseBuilder builder = Response.ok();
+		if ("NOT_STARTED".equals(retrievedJob.getStatus())) {
+			builder.status(202);
+		}
+		builder.entity(retrievedJob);
+		return builder.build();
 	}
-	@PUT
+
+	@POST
 	public Response post(String body) throws IOException {
 		Logger log  = Logger.getLogger(getClass().getName());
-		this.setupDbConnections();
 		
 	    Job myJob = new Job();
 	    log.warning(myJob.getStatus());
 	    
-	    MongoCollection jobs = getMongoConnection().getCollection("jobs");
-	    log.warning(myJob.get_id());
+	    Jongo jongo = getMongoConnection();
+	    MongoCollection jobs = jongo.getCollection("jobs");
 	    jobs.save(myJob);
-//	    Job retrievedJob = jobs.findOne("{status: 'NOT_STARTED'}").as(Job.class);
-	    log.warning(myJob.get_id());
+	    closeMongoConnection(jongo);
 	    
-	    return Response.ok(message).build();
+	    return Response.status(202).entity(myJob).build();
 	    
 	}
 
