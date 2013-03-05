@@ -10,6 +10,7 @@ package eu.dm2e.task.services;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -23,12 +24,21 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.bson.types.ObjectId;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jongo.Jongo;
 import org.jongo.MongoCollection;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.WriteResult;
+import com.mongodb.util.JSON;
+
 import eu.dm2e.task.model.Job;
+import eu.dm2e.task.model.JobStatus;
 
 @Path("/job")
 public class JobService extends AbstractTaskService {
@@ -44,25 +54,33 @@ public class JobService extends AbstractTaskService {
 	@Path("/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getJob(@PathParam("id") String id) throws IOException {
+		Logger log = Logger.getLogger(getClass().getName());
 		Job retrievedJob;
 		
-		Jongo jongo = getMongoConnection();
-	    MongoCollection jobs = jongo.getCollection("jobs");
+		DB mongo  = getMongoConnection();
+		DBCollection coll = mongo.getCollection("jobs");
+//	    MongoCollection jobs = jongo.getCollection("jobs");
 		try {
-			retrievedJob = jobs.findOne().as(Job.class);
+			DBObject doc = coll.findOne(new BasicDBObject("_id", new ObjectId(id)));
+			retrievedJob = Job.fromMongoDoc(doc);
+			log.warning(retrievedJob.toString()	);
 		} catch (IllegalArgumentException e) {
-			closeMongoConnection(jongo);
 			return Response.status(400).entity("Error: Malformed job ID").build();
-		} 
-		closeMongoConnection(jongo);
-		
-		if (null == retrievedJob) {
-			return Response.status(404).entity("Error: No such job").build();
+		} catch (NullPointerException e) {
+			return Response.status(404).entity(e.toString()).build();
+		} finally {
+//			closeMongoConnection(jongo);
 		}
 		
-		ResponseBuilder builder = Response.ok();
-		if ("NOT_STARTED".equals(retrievedJob.getStatus())) {
-			builder.status(202);
+		ResponseBuilder builder;
+		if (retrievedJob.getStatus() == JobStatus.FINISHED) {
+			builder = Response.status(200);
+		}
+		else if (retrievedJob.getStatus() == JobStatus.NOT_STARTED) {
+			builder = Response.status(202);
+		}
+		else {
+			builder = Response.ok(202);
 		}
 		builder.entity(mapper.writeValueAsBytes(retrievedJob));
 		return builder.build();
@@ -73,27 +91,26 @@ public class JobService extends AbstractTaskService {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response post(@Context UriInfo uriInfo, String body) throws IOException {
 //		Logger log  = Logger.getLogger(getClass().getName());
-		Job job;
-		try {
-			job = mapper.readValue(body, Job.class);
-		} catch (EOFException e) {
-			return Response.status(400).entity("Bad JSON or no JSON").build();
-		}
-		catch (JsonParseException e) {
-			return Response.status(400).entity(e.toString()).build();
-		}
 		
-	    Jongo jongo = getMongoConnection();
-	    MongoCollection jobs = jongo.getCollection("jobs");
-	    jobs.save(job);
+		DBObject bodyDoc = (DBObject) JSON.parse(body);
+//		log.warning(bodyDoc.toString());
+		
+	    DB mongo = getMongoConnection();
+	    DBCollection jobs = mongo.getCollection("jobs");
+	    
+	    // first save to get an _id
+	    jobs.save(bodyDoc);
+	    
+	    // build Job POJO
+	    Job job = Job.fromMongoDoc(bodyDoc);
+	    // set the url
 	    job.setJobURL(uriInfo.getRequestUri() + "/" + job.getJobID());
-	    jobs.save(job);
-	    closeMongoConnection(jongo);
+	    // save again for the url
+	    jobs.save(job.toMongoDoc());
 	    
 	    // TODO post to worker via RabbitMQ!
 	    
-		byte[] jobJSONstr = mapper.writeValueAsBytes(job);
-	    return Response.status(202).entity(jobJSONstr).build();
+	    return Response.status(202).entity(job.toJsonStr()).build();
 	}
 
 }

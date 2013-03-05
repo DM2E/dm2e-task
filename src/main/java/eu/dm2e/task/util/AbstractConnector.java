@@ -25,7 +25,7 @@ public abstract class AbstractConnector {
 		return rabbitConnection;
 	}
 
-	protected Jongo getMongoConnection() {
+	protected DB getMongoConnection() {
 		// set up mongo
 	    MongoClient mongoClient = null;
 		try {
@@ -33,13 +33,14 @@ public abstract class AbstractConnector {
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return null;
 		}
 	    DB db = mongoClient.getDB("dm2e");
-	    return new Jongo(db);
+	    return db;
 	}
-	protected void closeMongoConnection(Jongo jongo) {
-		jongo.getDatabase().getMongo().close();
-	}
+//	protected void closeMongoConnection(Jongo jongo) {
+//		jongo.getDatabase().getMongo().close();
+//	}
 
 	protected abstract String getRabbitQueueName();
 
