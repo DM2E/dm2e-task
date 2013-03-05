@@ -15,42 +15,45 @@ public class XsltWorker extends AbstractWorker {
 		return "eu.dm2e.task.xslt";
 	}
 	
-	@Override
-	public void doWork() throws IOException, ShutdownSignalException, ConsumerCancelledException, InterruptedException {
+	public void run() {
 		Connection rabbit = getRabbitConnection();
-		Channel channel = rabbit.createChannel();
-		QueueingConsumer consumer = new QueueingConsumer(channel);
-		channel.basicConsume(getRabbitQueueName(), true, consumer);
-		System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
-		while (true) {
-			QueueingConsumer.Delivery delivery = consumer.nextDelivery();
-			String message = new String(delivery.getBody());
-			System.out.println(" [x] Received '" + message + "'");
-		}	
-//		channel.close();
-//		rabbit.close();
-	}
-
-	
-	public static void main(String[] args) {
-		XsltWorker worker = new XsltWorker();
+		Channel channel = null;
 		try {
-			worker.doWork();
+			channel = rabbit.createChannel();
+			QueueingConsumer consumer = new QueueingConsumer(channel);
+			channel.basicConsume(getRabbitQueueName(), true, consumer);
+			System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
+			while (true) {
+				QueueingConsumer.Delivery delivery = consumer.nextDelivery();
+				String message = new String(delivery.getBody());
+				System.out.println(" [x] Received '" + message + "'");
+			}	
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} catch (ShutdownSignalException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (ConsumerCancelledException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println(this.getClass() + " has been interrupted.");
+			return;
+		}
+		finally {
+			try {
+				channel.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
-
-
+	
+//	public static void main(String[] args) {
+//		XsltWorker worker = new XsltWorker();
+//		worker.run();
+//	}
 
 }
