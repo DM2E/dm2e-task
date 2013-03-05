@@ -4,10 +4,9 @@
  */
 package eu.dm2e.omnom.test;
 
+import junit.framework.TestCase;
 import eu.dm2e.ws.grafeo.GLiteral;
 import eu.dm2e.ws.grafeo.Grafeo;
-import junit.framework.Test;
-import junit.framework.TestCase;
 
 /**
  *

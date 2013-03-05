@@ -47,7 +47,7 @@ public class XsltService extends AbstractTaskService {
 	    rabbit.close();
 	    
 	    Job myJob = new Job();
-	    log.warning(myJob.getStatus());
+	    log.warning(myJob.getStatus().toString());
 	    
 	    Jongo jongo = getMongoConnection();
 	    MongoCollection jobs = jongo.getCollection("jobs");

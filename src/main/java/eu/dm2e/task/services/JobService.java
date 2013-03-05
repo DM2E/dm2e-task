@@ -10,7 +10,6 @@ package eu.dm2e.task.services;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.util.logging.Logger;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -73,7 +72,7 @@ public class JobService extends AbstractTaskService {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response post(@Context UriInfo uriInfo, String body) throws IOException {
-		Logger log  = Logger.getLogger(getClass().getName());
+//		Logger log  = Logger.getLogger(getClass().getName());
 		Job job;
 		try {
 			job = mapper.readValue(body, Job.class);
