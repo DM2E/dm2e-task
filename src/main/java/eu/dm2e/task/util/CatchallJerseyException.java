@@ -1,7 +1,5 @@
 package eu.dm2e.task.util;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 
 
 public class CatchallJerseyException extends Exception {
