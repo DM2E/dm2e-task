@@ -4,10 +4,8 @@
 package eu.dm2e.task.model;
 
 import java.util.LinkedHashMap;
-import java.util.logging.Logger;
 
-import org.bson.BSONObject;
-import org.bson.NewBSONDecoder;
+import org.apache.log4j.Logger;
 import org.bson.types.ObjectId;
 import org.jongo.marshall.jackson.id.Id;
 
@@ -16,21 +14,25 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 
+import eu.dm2e.task.util.CatchallJerseyException;
+
 /**
  * @author kb
  * 
  */
 public class Job {
+	
+	private static final Logger logger = Logger.getLogger(Job.class);
 
 	@Id
-	private String jobID;
+	private String _id;
 	private JobStatus status = JobStatus.NOT_STARTED;
 	private String jobQueue;
 	private String jobURL;
 	private LinkedHashMap<String, Object> jobConfig;
 
-	public String getJobID() { return jobID; }
-	public void setJobID(String jobID) { this.jobID = jobID; }
+	public String get_id() { return _id; }
+	public void set_id(String jobID) { this._id = jobID; }
 
 	public JobStatus getStatus() { return status; }
 	public void setStatus(JobStatus status) { this.status = status; }
@@ -46,7 +48,7 @@ public class Job {
 
 	@Override
 	public String toString() {
-		return "Job [" + getJobQueue() + ":" + getJobID() + "] " + getStatus();
+		return "Job [" + getJobQueue() + ":" + get_id() + "] " + getStatus();
 	}
 	
 	/**
@@ -56,14 +58,13 @@ public class Job {
 	
 	@SuppressWarnings("unchecked")
 	public static Job fromMongoDoc(DBObject doc) {
-		Logger log = Logger.getLogger(Job.class.getName());
 		Job job = new Job();
 		if (doc.containsField("_id")) {
-			log.warning(doc.toString());
-			job.setJobID(doc.get("_id").toString());
+//			logger.warn(doc.get("_id"));
+			job.set_id(doc.get("_id").toString());
 		}
-		if (doc.containsField("status")) {
-			job.setStatus(JobStatus.valueOf((String) doc.get("status")));
+		if (doc.containsField("jobStatus")) {
+			job.setStatus(JobStatus.valueOf((String) doc.get("jobStatus")));
 		}
 		if (doc.containsField("jobURL")) {
 			job.setJobURL((String) doc.get("jobURL"));
@@ -71,7 +72,6 @@ public class Job {
 		if (doc.containsField("jobQueue")) {
 			job.setJobQueue((String) doc.get("jobQueue"));
 		}
-
 		if (doc.containsField("jobConfig")) {
 			Gson gson = new Gson();
 			job.setJobConfig(gson.fromJson(doc.get("jobConfig").toString(), LinkedHashMap.class));
@@ -80,8 +80,8 @@ public class Job {
 	}
 	public DBObject toMongoDoc() {
 		DBObject doc = new BasicDBObject();
-		if (null != this.getJobID())
-			doc.put("_id", new ObjectId(this.getJobID()));
+		if (null != this.get_id())
+			doc.put("_id", new ObjectId(this.get_id()));
 		if (null != this.getStatus())
 			doc.put("jobStatus", this.getStatus().toString());
 		if (null != this.getJobQueue())
@@ -94,28 +94,28 @@ public class Job {
 	}
 	
 	public static Job fromJsonStr(String jsonStr) {
-		Logger log = Logger.getLogger(Job.class.getName());
-		log.warning(jsonStr);
+		logger.warn(jsonStr);
 		DBObject doc = (DBObject) JSON.parse(jsonStr);
-		log.warning(doc.toString());
+		logger.warn(doc.toString());
 		if (doc.containsField("_id")) {
 			doc.put("_id", new ObjectId((String)doc.get("_id")));
 		}
+		logger.warn(doc.toString());
 		return fromMongoDoc(doc);
 	}
 	public String toJsonStr() {
 		DBObject doc = this.toMongoDoc();
-//		doc.put("_id", ((ObjectId) doc.get("_id")).toByteArray());
-		doc.put("_id", this.getJobID());
+		logger.warn(doc.toString());
+		doc.put("_id", this.get_id());
+		logger.warn(doc.toString());
 		return doc.toString();
 	}
 	
-	public boolean jsonIsValidJob(String jsonStr) {
+	public static void validateJsonJob(String jsonStr) throws CatchallJerseyException {
 		DBObject doc = (DBObject) JSON.parse(jsonStr);
 		if (null == doc)
-			return false;
+			throw new CatchallJerseyException("Empty or unparseable JSON");
 		if (!doc.containsField("jobQueue"))
-			return false;
-		return true;
+			throw new CatchallJerseyException("Every Job must contain a jobQueue field.");
 	}
 }
