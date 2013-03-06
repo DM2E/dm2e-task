@@ -14,6 +14,7 @@ import org.jongo.marshall.jackson.id.Id;
 import com.google.gson.Gson;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
 
 /**
  * @author kb
@@ -58,6 +59,7 @@ public class Job {
 		Logger log = Logger.getLogger(Job.class.getName());
 		Job job = new Job();
 		if (doc.containsField("_id")) {
+			log.warning(doc.toString());
 			job.setJobID(doc.get("_id").toString());
 		}
 		if (doc.containsField("status")) {
@@ -78,17 +80,42 @@ public class Job {
 	}
 	public DBObject toMongoDoc() {
 		DBObject doc = new BasicDBObject();
-		doc.put("_id", new ObjectId(this.getJobID()));
-		doc.put("jobStatus", this.getStatus().toString());
-		doc.put("jobQueue", this.getJobQueue());
-		doc.put("jobURL", this.getJobURL());
-		doc.put("jobConfig", this.getJobConfig());
+		if (null != this.getJobID())
+			doc.put("_id", new ObjectId(this.getJobID()));
+		if (null != this.getStatus())
+			doc.put("jobStatus", this.getStatus().toString());
+		if (null != this.getJobQueue())
+			doc.put("jobQueue", this.getJobQueue());
+		if (null != this.getJobURL())
+			doc.put("jobURL", this.getJobURL());
+		if (null != this.getJobConfig())
+			doc.put("jobConfig", this.getJobConfig());
 		return doc;
+	}
+	
+	public static Job fromJsonStr(String jsonStr) {
+		Logger log = Logger.getLogger(Job.class.getName());
+		log.warning(jsonStr);
+		DBObject doc = (DBObject) JSON.parse(jsonStr);
+		log.warning(doc.toString());
+		if (doc.containsField("_id")) {
+			doc.put("_id", new ObjectId((String)doc.get("_id")));
+		}
+		return fromMongoDoc(doc);
 	}
 	public String toJsonStr() {
 		DBObject doc = this.toMongoDoc();
 //		doc.put("_id", ((ObjectId) doc.get("_id")).toByteArray());
 		doc.put("_id", this.getJobID());
 		return doc.toString();
+	}
+	
+	public boolean jsonIsValidJob(String jsonStr) {
+		DBObject doc = (DBObject) JSON.parse(jsonStr);
+		if (null == doc)
+			return false;
+		if (!doc.containsField("jobQueue"))
+			return false;
+		return true;
 	}
 }
