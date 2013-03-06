@@ -54,7 +54,7 @@ public class Job {
 	/**
 	 * Pointless constructor to make Jongo happy
 	 */
-	Job() { }
+//	public Job() { }
 	
 	@SuppressWarnings("unchecked")
 	public static Job fromMongoDoc(DBObject doc) {
