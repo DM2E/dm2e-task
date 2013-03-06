@@ -1,59 +1,53 @@
 package eu.dm2e.task.worker;
 
-import java.io.IOException;
+import javax.ws.rs.core.MediaType;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConsumerCancelledException;
-import com.rabbitmq.client.QueueingConsumer;
-import com.rabbitmq.client.ShutdownSignalException;
+import com.mongodb.BasicDBObject;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.WebResource;
 
+import eu.dm2e.task.model.JobStatus;
+
+/**
+ * @todo should think about where to store client and webresources (client
+ *       creation is expensive and thread safe)
+ *       http://stackoverflow.com/questions
+ *       /8012680/jersey-client-connection-close-memory-leak-issue
+ * @author kb
+ * 
+ */
 public class XsltWorker extends AbstractWorker {
 
-	@Override
-	protected String getRabbitQueueName() {
-		return "eu.dm2e.task.xslt";
-	}
-	
-	public void run() {
-		Connection rabbit = getRabbitConnection();
-		Channel channel = null;
-		try {
-			channel = rabbit.createChannel();
-			QueueingConsumer consumer = new QueueingConsumer(channel);
-			channel.basicConsume(getRabbitQueueName(), true, consumer);
-			System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
-			while (true) {
-				QueueingConsumer.Delivery delivery = consumer.nextDelivery();
-				String message = new String(delivery.getBody());
-				System.out.println(" [x] Received '" + message + "'");
-			}	
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ShutdownSignalException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ConsumerCancelledException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			System.out.println(this.getClass() + " has been interrupted.");
-			return;
-		}
-		finally {
-			try {
-				channel.close();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-	
-//	public static void main(String[] args) {
-//		XsltWorker worker = new XsltWorker();
-//		worker.run();
-//	}
+	final static String rabbitQueueName = "eu.dm2e.task.worker.XsltWorker";
 
+	private Client client = new Client();
+
+	// public XsltWorker() { }
+
+	@Override
+	public String getRabbitQueueName() {
+		return rabbitQueueName;
+	}
+
+	@Override
+	public void handleMessage(String message) throws InterruptedException {
+		WebResource r = client.resource(message);
+		String response;
+		System.out.println("Pretending to do work"); 
+		response = r
+				.accept(MediaType.APPLICATION_JSON)
+				.type(MediaType.APPLICATION_JSON)
+				.put(String.class,
+						new BasicDBObject().append("jobStatus",
+								JobStatus.STARTED.toString()).toString());
+		Thread.sleep(10000);
+		System.out.println("Done! ;-)");
+		response = r
+				.accept(MediaType.APPLICATION_JSON)
+				.type(MediaType.APPLICATION_JSON)
+				.put(String.class,
+						new BasicDBObject().append("jobStatus",
+								JobStatus.FINISHED.toString()).toString());
+		System.out.println(response);
+	}
 }
