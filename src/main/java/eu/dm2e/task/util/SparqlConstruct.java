@@ -9,6 +9,7 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 
+import eu.dm2e.ws.grafeo.Grafeo;
 import eu.dm2e.ws.grafeo.jena.GrafeoImpl;
 
 public class SparqlConstruct {
@@ -66,15 +67,13 @@ public class SparqlConstruct {
 		return sb.toString();
 	}
 	
-	public GrafeoImpl execute() {
+	public void execute(GrafeoImpl g) {
 		if (null == endpoint)
 			throw new IllegalArgumentException("Must set endpoint to perform query.");
         log.info("CONSTRUCT query: " + toString());
         Query query = QueryFactory.create(toString());
         log.info("Query: " + toString());
         QueryExecution exec = QueryExecutionFactory.createServiceRequest(endpoint, query);
-        Model model = ModelFactory.createDefaultModel();
-        exec.execConstruct(model);
-        return new GrafeoImpl(model);
+        exec.execConstruct(g.getModel());
 	}
 }
