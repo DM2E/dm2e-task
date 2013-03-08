@@ -9,16 +9,39 @@ import com.rabbitmq.client.ShutdownSignalException;
 
 import eu.dm2e.task.util.RabbitConnection;
 
+/**
+ * Abstract Base class of all workers
+ * @author kb
+ *
+ */
 public abstract class AbstractWorker implements Runnable {
 
+	/**
+	 * Reacts to a message sent to the worker by interpreting it as a run
+	 * configuration and doing its thing.
+	 * 
+	 * @param message
+	 *            The message sent to the worker
+	 * @throws InterruptedException
+	 */
 	abstract void handleMessage(String message) throws InterruptedException;
+
+	/**
+	 * @return name of the queue name this worker is listening on
+	 */
 	abstract String getRabbitQueueName();
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Runnable#run()
+	 */
 	public void run() {
 		Channel channel = RabbitConnection.getChannel();
 
 		try {
-			channel.queueDeclare(this.getRabbitQueueName(), true, false, false, null);
+			channel.queueDeclare(this.getRabbitQueueName(), true, false, false,
+					null);
 			QueueingConsumer consumer = new QueueingConsumer(channel);
 			channel.basicConsume(this.getRabbitQueueName(), true, consumer);
 			System.out
