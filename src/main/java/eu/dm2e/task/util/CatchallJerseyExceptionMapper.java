@@ -25,7 +25,8 @@ public class CatchallJerseyExceptionMapper implements
     private HttpHeaders headers;
 
 	public Response toResponse( CatchallJerseyException e) {
-		String body = e.getWrappedException().toString();
+//		String body = e.getWrappedException().toString();
+		String body = toResponse_TEXT_PLAIN(e);
 		String mediaType = "text/plain";
 		List<MediaType> acceptableList = headers.getAcceptableMediaTypes();
 		for (int i=0; i < acceptableList.size(); i++) {
