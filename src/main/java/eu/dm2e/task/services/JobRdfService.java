@@ -20,6 +20,7 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.NodeIterator;
 
 import eu.dm2e.task.model.JobStatus;
+import eu.dm2e.task.model.NS;
 import eu.dm2e.task.util.CatchallJerseyException;
 import eu.dm2e.task.util.SparqlConstruct;
 import eu.dm2e.task.util.SparqlUpdate;
@@ -34,12 +35,8 @@ public class JobRdfService extends AbstractRDFService {
 
 	private Logger log = Logger.getLogger(getClass().getName());
 	private static final String 
-								NS_DM2E = "http://onto.dm2e.eu/",
-								NS_DM2E_LOGGING = "http://onto.dm2e.eu/logging#",
-								ENDPOINT = "http://lelystad.informatik.uni-mannheim.de:8080/openrdf-sesame/repositories/dm2etest",
-								ENDPOINT_STATEMENTS = "http://lelystad.informatik.uni-mannheim.de:8080/openrdf-sesame/repositories/dm2etest/statements",
-								JOB_STATUS_PROP = NS_DM2E + "status",
-								JOB_LOGENTRY_PROP = NS_DM2E + "hasLogEntry";
+								JOB_STATUS_PROP = NS.DM2E + "status",
+								JOB_LOGENTRY_PROP = NS.DM2E + "hasLogEntry";
 	
 	private @Context UriInfo uriInfo;
 	
@@ -51,10 +48,10 @@ public class JobRdfService extends AbstractRDFService {
 			throws CatchallJerseyException {
 		// kb: need to use Jena model
 		GrafeoImpl g = new GrafeoImpl();
-		g.readFromEndpoint(ENDPOINT, uriInfo.getRequestUri().toString());
+		g.readFromEndpoint(NS.ENDPOINT, uriInfo.getRequestUri().toString());
 		Model jenaModel = g.getModel();
 		NodeIterator iter = jenaModel.listObjectsOfProperty(jenaModel
-				.createProperty(NS_DM2E + "status"));
+				.createProperty(NS.DM2E + "status"));
 		if (null == iter || !iter.hasNext()) {
 			throw new CatchallJerseyException(
 					"No Job Status in this one. Not good.");
@@ -97,10 +94,10 @@ public class JobRdfService extends AbstractRDFService {
 		String id = "" + new Date().getTime();
 		String uri = uriInfo.getRequestUri() + "/" + id;
 		blank.rename(uri);
-		g.addTriple(uri, "rdf:type", NS_DM2E + "Job");
-		g.addTriple(uri, NS_DM2E + "status",
+		g.addTriple(uri, "rdf:type", NS.DM2E + "Job");
+		g.addTriple(uri, NS.DM2E + "status",
 				g.literal(JobStatus.NOT_STARTED.toString()));
-		g.writeToEndpoint(ENDPOINT_STATEMENTS, uri);
+		g.writeToEndpoint(NS.ENDPOINT_STATEMENTS, uri);
 		return Response.created(URI.create(uri)).entity(getResponseEntity(g))
 				.build();
 	}
@@ -115,10 +112,10 @@ public class JobRdfService extends AbstractRDFService {
 	
 	public JobStatus getJobStatusInternal(String jobUriStr) throws CatchallJerseyException {
 		GrafeoImpl g = new GrafeoImpl();
-		g.readFromEndpoint(ENDPOINT, jobUriStr);
+		g.readFromEndpoint(NS.ENDPOINT, jobUriStr);
 		Model jenaModel = g.getModel();
 		NodeIterator iter = jenaModel.listObjectsOfProperty(
-				jenaModel.createProperty(NS_DM2E + "status"));
+				jenaModel.createProperty(NS.DM2E + "status"));
 		if (null == iter || !iter.hasNext()) {
 			throw new CatchallJerseyException(
 					"No Job Status in this one. Not good.");
@@ -171,7 +168,7 @@ public class JobRdfService extends AbstractRDFService {
         	.delete(clauseDelete)
         	.insert(clauseInsert)
         	.where(clauseDelete)
-        	.endpoint(ENDPOINT_STATEMENTS)
+        	.endpoint(NS.ENDPOINT_STATEMENTS)
         	.build()
 	        .execute()
         	;
@@ -204,10 +201,10 @@ public class JobRdfService extends AbstractRDFService {
 		if (null == blank) throw new CatchallJerseyException("Must contain blank node");
 		String logEntryUriStr = uriInfo.getRequestUri().toString() + "/" + timestamp;
 		blank.rename(logEntryUriStr);
-		g.addTriple(resourceUriStr, "rdf:type", NS_DM2E_LOGGING + "LogEntry");
+		g.addTriple(resourceUriStr, "rdf:type", NS.NS_DM2E_LOGGING + "LogEntry");
 		g.addTriple(resourceUriStr, JOB_LOGENTRY_PROP, logEntryUriStr);
-		g.addTriple(logEntryUriStr, NS_DM2E_LOGGING + "timestamp" , timestampLiteral);
-		g.writeToEndpoint(ENDPOINT_STATEMENTS, resourceUriStr);
+		g.addTriple(logEntryUriStr, NS.NS_DM2E_LOGGING + "timestamp" , timestampLiteral);
+		g.writeToEndpoint(NS.ENDPOINT_STATEMENTS, resourceUriStr);
         	
 		return getResponse(g);
 //		return getJobStatus(uriInfo, id);
@@ -219,22 +216,19 @@ public class JobRdfService extends AbstractRDFService {
 		
 		
 		String resourceUriStr = uriInfo.getRequestUri().toString().replaceAll("/log$", "");
-		SparqlConstruct sparqlConstruct;
-		Grafeo g;
+		GrafeoImpl g = new GrafeoImpl();
 		try {
-			sparqlConstruct = new SparqlConstruct.Builder()
-					.endpoint(ENDPOINT)
+			new SparqlConstruct.Builder()
+					.endpoint(NS.ENDPOINT)
 					.graph(resourceUriStr)
 					.construct("?s ?p ?o")
-					.where("?s a <" + NS_DM2E_LOGGING + "LogEntry> . ?s ?p ?o .")
-//					.where("?s a <" + NS_DM2E + "LogEntry>")
-					.build();
-			g = sparqlConstruct.execute();
+					.where("?s a <" + NS.NS_DM2E_LOGGING + "LogEntry> . ?s ?p ?o .")
+					.build() 
+					.execute(g);
 			
 		} catch (Exception e) {
 			throw new CatchallJerseyException(e);
 		}
-//		throw new CatchallJerseyException("TODO");
 		return getResponse(g);
 	}
 
