@@ -9,6 +9,9 @@ import com.sun.jersey.api.client.WebResource;
 import eu.dm2e.task.model.JobStatus;
 
 /**
+ * This worker transforms XML to XML using an XSLT style sheet and the Saxon XSL
+ * transformation engine
+ * 
  * @todo should think about where to store client and webresources (client
  *       creation is expensive and thread safe)
  *       http://stackoverflow.com/questions
@@ -22,8 +25,6 @@ public class XsltWorker extends AbstractWorker {
 
 	private Client client = new Client();
 
-	// public XsltWorker() { }
-
 	@Override
 	public String getRabbitQueueName() {
 		return rabbitQueueName;
@@ -33,7 +34,7 @@ public class XsltWorker extends AbstractWorker {
 	public void handleMessage(String message) throws InterruptedException {
 		WebResource r = client.resource(message);
 		String response;
-		System.out.println("Pretending to do work"); 
+		System.out.println("Pretending to do work");
 		response = r
 				.accept(MediaType.APPLICATION_JSON)
 				.type(MediaType.APPLICATION_JSON)
