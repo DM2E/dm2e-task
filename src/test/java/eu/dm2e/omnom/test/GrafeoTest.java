@@ -7,6 +7,7 @@ package eu.dm2e.omnom.test;
 import junit.framework.TestCase;
 import eu.dm2e.ws.grafeo.GLiteral;
 import eu.dm2e.ws.grafeo.Grafeo;
+import eu.dm2e.ws.grafeo.jena.GrafeoImpl;
 
 /**
  *
@@ -22,7 +23,7 @@ public class GrafeoTest extends TestCase {
 	
 	@Override
 	protected void setUp() throws Exception {
-		this.g = new Grafeo();
+		this.g = new GrafeoImpl();
 		super.setUp();
 	}
 	
