@@ -38,7 +38,7 @@ import eu.dm2e.task.util.CatchallJerseyException;
 import eu.dm2e.task.util.MongoConnection;
 import eu.dm2e.task.util.RabbitConnection;
 
-@Path("/job")
+@Path("/job-json")
 public class JobService {
 	
 	private static final Logger logger = Logger.getLogger(Job.class);
@@ -110,6 +110,9 @@ public class JobService {
 		return Response.status(202).entity(job.toJsonStr()).build();
 	}
 
+//	@Target({ElementType.METHOD})
+//	@Retention(RetentionPolicy.RUNTIME)
+//	@HttpMethod("PATCH")
 	@PUT
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
