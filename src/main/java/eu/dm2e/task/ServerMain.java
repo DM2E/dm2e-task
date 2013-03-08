@@ -49,5 +49,6 @@ public class ServerMain {
                 BASE_URI));
         System.in.read();
         httpServer.stop();
+        System.exit(0);
     }    
 }
