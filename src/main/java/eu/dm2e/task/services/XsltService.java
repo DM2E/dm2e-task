@@ -1,32 +1,25 @@
 package eu.dm2e.task.services;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URL;
 import java.util.Date;
 import java.util.logging.Logger;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.rabbitmq.client.Channel;
 import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
@@ -73,21 +66,11 @@ public class XsltService extends AbstractRDFService {
         return getResponse(g);
 	}
 	
-	@POST
-	@Consumes(MediaType.WILDCARD)
-	public Response postTransformation(@Context UriInfo uriInfo, File body) throws CatchallJerseyException {
+	@PUT
+	@Consumes(MediaType.TEXT_PLAIN)
+	public Response putTransformation(String configURI) throws CatchallJerseyException {
 		
-		long timestamp = new Date().getTime();
-		
-		WebResource jobResource = Client.create().resource(URI_JOB_SERVICE);
-		WebResource configResource = Client.create().resource(URI_CONFIG_SERVICE);
-		
-		// post the config
-		log.info("Persisting config.");
-		ClientResponse configResponse = configResource
-			.accept("text/turtle")
-			.post(ClientResponse.class, body);
-		URI configUri = configResponse.getLocation();
+		WebResource jobResource = Client.create().resource(URI_JOB_SERVICE);	
 		
 		// create the job
 		log.info("Creating the job");
@@ -97,14 +80,15 @@ public class XsltService extends AbstractRDFService {
 		emptyResource.addProperty(m.createProperty(NS.RDF + "type"), m.createResource(NS.DM2E + "Job"));
 		emptyResource.addLiteral(m.createProperty(NS.DM2E + "status"), "NOT_STARTED");
 		emptyResource.addProperty(m.createProperty(NS.DM2E + "hasWebSerice"), m.createResource(uriInfo.getRequestUri().toASCIIString()));
-		emptyResource.addProperty(m.createProperty(PROPERTY_HAS_WEB_SERVICE_CONFIG), m.createResource(configUri.toString()));
+		emptyResource.addProperty(m.createProperty(PROPERTY_HAS_WEB_SERVICE_CONFIG), m.createResource(configURI));
 		ClientResponse jobResponse = jobResource
 			.accept("text/turtle")
 			.post(ClientResponse.class, g.getNTriples());
 		URI jobUri = jobResponse.getLocation();
+		g.findTopBlank().rename(jobUri.toString());
 		
 		
-		// TODO post the job to the worker
+		// post the job to the worker
 		log.info("Posting the job to the worker queue");
 		byte[] messageBytes = jobUri.toString().getBytes();
 		Channel channel;
@@ -112,54 +96,32 @@ public class XsltService extends AbstractRDFService {
 			channel = RabbitConnection.getChannel();
 			channel.basicPublish("", SERVICE_RABBIT_QUEUE, null, messageBytes);
 			channel.close();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			throw new CatchallJerseyException(e);
 		}
 		
 		
 		// return location of the job
 		return Response.created(jobUri).entity(getResponseEntity(g)).build();
-		
-//		g.lo
-		
-//		addProperty(g.resource("rdf:type").getResource(), g.resource("dm2e:Job").getResource());
-//		g.addTriple(emptyResource, "rdf:blech", "foo");
-//		return getResponse(g);
-		
-//        String xslUrl = null;
-//        String xmlUrl = null;
-//        log.info("Config URL: " + body);
-//        Grafeo g = new GrafeoImpl(body);
-//        log.info("Config content: " + g.getNTriples());
-//        xmlUrl = g.get(body).get(PROPERTY_XML_SOURCE).resource().getUri();
-//        xslUrl = g.get(body).get(PROPERTY_XSLT_SOURCE).resource().getUri();
-//
-//        log.info("XML URL: " + xmlUrl);
-//        log.info("XSL URL: " + xslUrl);
-//
-//        if (null == xslUrl || null == xmlUrl) {
-//        	throw new CatchallJerseyException("Error in configuration");
-//        }
-//        Grafeo jobG = new GrafeoImpl();
-//        TransformerFactory tFactory = TransformerFactory.newInstance();
-//        try {
-//
-//            StreamSource xmlSource = new StreamSource(new URL(xmlUrl).openStream());
-//            StreamSource xslSource = new StreamSource(new URL(xslUrl).openStream());
-//            Transformer transformer = tFactory.newTransformer(xslSource);
-//
-//            ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-//            StreamResult xslResult = new StreamResult(outStream);
-//
-//            transformer.transform(xmlSource, xslResult);
-//            log.info("Output to write: " + outStream.toString());
-//            return Response.ok(outStream.toString()).build();
-//        } catch (Exception e) {
-//            log.severe("Error during XSLT transformation: " + e);
-//            throw new CatchallJerseyException(e);
-//        }
-//		return getResponse(g);
 	}
 	
 
+
+	@POST
+	@Consumes(MediaType.WILDCARD)
+	public Response postTransformation(@Context UriInfo uriInfo, File body) throws CatchallJerseyException {
+		
+		WebResource configResource = Client.create().resource(URI_CONFIG_SERVICE);
+		
+		// post the config
+		log.info("Persisting config.");
+		ClientResponse configResponse = configResource
+			.accept("text/turtle")
+			.post(ClientResponse.class, body);
+		URI configUri = configResponse.getLocation();
+		
+		return putTransformation(configUri.toString());
+	}
+
 }
+	
