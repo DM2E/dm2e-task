@@ -2,6 +2,9 @@ package eu.dm2e.task;
 
 
 import com.sun.jersey.api.container.grizzly2.GrizzlyWebContainerFactory;
+
+import eu.dm2e.ws.Config;
+
 import org.glassfish.grizzly.http.server.HttpServer;
 import java.io.IOException;
 import java.net.URI;
@@ -23,9 +26,10 @@ public class ServerMain {
         return defaultPort;
     }
 
-    private static URI getBaseURI() {
-        return UriBuilder.fromUri("http://localhost/").port(getPort(9110)).build();
-    }
+	static URI getBaseURI() {
+		return UriBuilder.fromUri(
+				Config.config.getString("dm2e.task.base_uri", "http://localhost:9110/")).build();
+	}
 
     public static final URI BASE_URI = getBaseURI();
     
@@ -42,6 +46,12 @@ public class ServerMain {
     }
     
     public static void main(String[] args) throws IOException {
+    	
+		if (null == Config.config) {
+			System.err.println("No config was found. Create 'config.xml'.");
+			System.exit(1);
+		}
+    	
         // Grizzly 2 initialization
         HttpServer httpServer = startServer();
         System.out.println(String.format("OmNom started with WADL available at "

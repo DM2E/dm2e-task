@@ -9,6 +9,7 @@ import java.util.concurrent.Future;
 
 import eu.dm2e.task.worker.AbstractWorker;
 import eu.dm2e.task.worker.XsltWorker;
+import eu.dm2e.ws.Config;
 
 public class WorkerMain {
 
@@ -17,6 +18,13 @@ public class WorkerMain {
 	 * @throws IOException
 	 */
 	public static void main(String[] args) throws IOException {
+		
+		// make sure config is loaded
+		if (null == Config.config) {
+			System.err.println("No config was found. Create 'config.xml'.");
+			System.exit(1);
+		}
+		
 		List<AbstractWorker> workerInstanceList = new ArrayList<AbstractWorker>();
 		@SuppressWarnings("rawtypes")
 		List<Future> workerThreadList = new ArrayList<Future>();
