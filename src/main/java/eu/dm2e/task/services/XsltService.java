@@ -3,7 +3,6 @@ package eu.dm2e.task.services;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.Date;
 import java.util.logging.Logger;
 
 import javax.ws.rs.Consumes;
@@ -38,9 +37,9 @@ public class XsltService extends AbstractRDFService {
 	private static final String SERVICE_DESCRIPTION_RESOURCE = "/xslt-service-description.ttl";
 	private static final String SERVICE_RABBIT_QUEUE = "eu.dm2e.task.worker.XsltWorker";
 	
-	private static final String NS_XSLT_SERVICE = "http://omnom.dm2e.eu/service/xslt#";
-	private static final String PROPERTY_XML_SOURCE = NS_XSLT_SERVICE + "xmlSource";
-	private static final String PROPERTY_XSLT_SOURCE = NS_XSLT_SERVICE + "xsltSource";
+//	private static final String NS_XSLT_SERVICE = "http://omnom.dm2e.eu/service/xslt#";
+//	private static final String PROPERTY_XML_SOURCE = NS_XSLT_SERVICE + "xmlSource";
+//	private static final String PROPERTY_XSLT_SOURCE = NS_XSLT_SERVICE + "xsltSource";
 	private static final String PROPERTY_HAS_WEB_SERVICE_CONFIG = NS.DM2E + "hasWebServiceConfig";
 	
 	// TODO shouldnot be hardwired

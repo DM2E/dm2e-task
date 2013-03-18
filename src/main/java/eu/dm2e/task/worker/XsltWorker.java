@@ -17,6 +17,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
 import eu.dm2e.task.model.NS;
+import eu.dm2e.ws.Config;
 import eu.dm2e.ws.grafeo.jena.GrafeoImpl;
 
 /**
@@ -32,18 +33,23 @@ import eu.dm2e.ws.grafeo.jena.GrafeoImpl;
  */
 public class XsltWorker extends AbstractWorker {
 
-	private static final String SERVICE_DESCRIPTION_RESOURCE = "/xslt-service-description.ttl";
-	private static final String SERVICE_RABBIT_QUEUE = "eu.dm2e.task.worker.XsltWorker";
-	private static final Object SERVICE_URI = "http://omnom.dm2e.eu/service/xslt";
-	
-	private static final String NS_XSLT_SERVICE = "http://omnom.dm2e.eu/service/xslt#";
+	// Constants from the configuration
+	private static final String SERVICE_DESCRIPTION_RESOURCE = 
+			Config.getString("dm2e.service.xslt.description_resource");
+	private static final String SERVICE_RABBIT_QUEUE = 
+			Config.getString("dm2e.service.xslt.worker_queue");
+	private static final Object SERVICE_URI = Config.getString("dm2e.service.xslt.base_uri");
+	private static final String NS_XSLT_SERVICE = Config.getString("dm2e.service.xslt.namespace");
 	private static final String PROPERTY_XML_SOURCE = NS_XSLT_SERVICE + "xmlSource";
 	private static final String PROPERTY_XSLT_SOURCE = NS_XSLT_SERVICE + "xsltSource";
 	
+	// The HTTP REST client
 	private Client client = new Client();
 	
+	// Logging
 	Logger log = Logger.getLogger(getClass().getName());
 	
+	// the worker queue
 	@Override
 	String getRabbitQueueName() { return SERVICE_RABBIT_QUEUE; }
 
@@ -52,17 +58,17 @@ public class XsltWorker extends AbstractWorker {
 		final HashMap<String, WebResource> jobResources = new HashMap<String, WebResource>();
 		
 		jobResources.put("job", client.resource(jobUri));
-		jobResources.put("status", client.resource(jobUri + "/status"));
-		jobResources.put("logRDF", client.resource(jobUri + "/log"));
-		jobResources.put("log", client.resource(jobUri + "/log"));
-//		for (WebResource r : jobResources.values()) {
-//			r.header("Referer", SERVICE_RABBIT_QUEUE);
-//		}
+		jobResources.put("jobStatus", client.resource(jobUri + "/status"));
+		jobResources.put("jobLog", client.resource(jobUri + "/log"));
 		
+		/**
+		 * @todo this works but should be a class in it's own right ofc
+		 *
+		 */
 		class InnerLogger {
 			public void log(String msg) {
 				log.info(msg);
-				jobResources.get("log")
+				jobResources.get("jobLog")
 					.header("Content-Type", "text/plain")
 					.header("Referer", SERVICE_URI)
 					.post(msg);
@@ -71,26 +77,30 @@ public class XsltWorker extends AbstractWorker {
 		InnerLogger innerlog = new InnerLogger();
 		
 		
+		// Generate Grafeo for the current job
 		GrafeoImpl jobModel = new GrafeoImpl();
-		GrafeoImpl configModel = new GrafeoImpl();
 		jobModel.load(jobUri);
 		
 		innerlog.log("TRACE: Starting to handle XSLT transformation job");
 		
+		// Find the configuration for this worker run
+		GrafeoImpl configModel = new GrafeoImpl();
 		String configUri;
 		try {
-			NodeIterator iter = jobModel.getModel().listObjectsOfProperty(jobModel.getModel().createProperty(NS.DM2E + "hasWebServiceConfig"));
+			NodeIterator iter = jobModel.getModel().listObjectsOfProperty(
+					jobModel.getModel().createProperty(NS.DM2E + "hasWebServiceConfig"));
 			configUri = iter.next().toString();
 		} catch(Exception e) {
 			innerlog.log("FATAL: Job is missing hasWebServiceConfig");
 			jobResources.get("status").put("FAILED");
 			return;
 		}
-//		= jobModel.get(jobUri).get(NS.DM2E + "hasWebServiceConfig").resource().getUri();
-//		
+		
+		// Populate the configuration model
         log.info("Config URL: " + configUri);
         configModel.load(configUri);
         
+        // Get the input parameters
         String xmlUrl = null;
         String xsltUrl = null;
 		try {
@@ -101,7 +111,7 @@ public class XsltWorker extends AbstractWorker {
 			xsltUrl = iter.next().toString();
 		} catch(Exception e) {
 			innerlog.log("FATAL: Job is missing either xmlSource or xsltSource");
-			jobResources.get("status").put("FAILED");
+			jobResources.get("jobStatus").put("FAILED");
 			return;
 		}
 //		xmlUrl = jobModel.get(jobUri).get(PROPERTY_XML_SOURCE).resource().getUri();
@@ -110,6 +120,7 @@ public class XsltWorker extends AbstractWorker {
         log.info("XML URL: " + xmlUrl);
         log.info("XSL URL: " + xsltUrl);
         
+        // Make sure that the resources are available
         ArrayList<WebResource> unreadyResources = new ArrayList<WebResource>();
         unreadyResources.add(client.resource(xsltUrl));
         unreadyResources.add(client.resource(xmlUrl));
@@ -121,7 +132,7 @@ public class XsltWorker extends AbstractWorker {
         		if (! r.getURI().getScheme().matches("^(h|f)ttps?")) {
         			log.severe("Not an http/ftp link: " + r.getURI().getScheme());
         			innerlog.log("FATAL: Not an http/ftp link: " + r.getURI().getScheme());
-        			jobResources.get("status").put("FAILED");
+        			jobResources.get("jobStatus").put("FAILED");
         			return;
         		}
         		innerlog.log("TRACE: Testing HEAD on " + r.getURI());
@@ -134,7 +145,7 @@ public class XsltWorker extends AbstractWorker {
         		else{
         			log.severe("Resource "+r.getURI()+" not available. Will croak for now.");
         			innerlog.log("FATAL: Resource "+r.getURI()+" not available. Will croak for now.");
-        			jobResources.get("status").put("FAILED");
+        			jobResources.get("jobStatus").put("FAILED");
         			return;
         		}
         	}
@@ -142,7 +153,9 @@ public class XsltWorker extends AbstractWorker {
         }
 		
 		innerlog.log("INFO: Starting transformation");
-		jobResources.get("status").put("STARTED");
+		
+        // update job status
+		jobResources.get("jobStatus").put("STARTED");
         TransformerFactory tFactory = TransformerFactory.newInstance();
         try {
 
@@ -154,11 +167,14 @@ public class XsltWorker extends AbstractWorker {
             StreamResult xslResult = new StreamResult(outStream);
 
             transformer.transform(xmlSource, xslResult);
+            log.info(xslResult.toString());
             // TODO do something with outstream
         } catch (Exception e) {
             innerlog.log("FATAL: Error during XSLT transformation: " + e);
         }
-		jobResources.get("status").put("FINISHED");
-		innerlog.log("INFO: Done ;");
+        
+        // Update job status
+		jobResources.get("jobStatus").put("FINISHED");
+		innerlog.log("INFO: XSLT Transformation complete.");
 	}
 }
