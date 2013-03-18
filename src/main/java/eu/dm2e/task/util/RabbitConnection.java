@@ -6,11 +6,13 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
+import eu.dm2e.ws.Config;
+
 public class RabbitConnection {
 	
 	// TODO configurable!
-	private static final String RABBIT_HOST = "localhost";
-	private static final int RABBIT_PORT = 5672;
+	private static final String RABBIT_HOST = Config.getString("dm2e.task.rabbitmq.host");
+	private static final int RABBIT_PORT = Integer.parseInt(Config.getString("dm2e.task.rabbitmq.port"));
 	
 	public static synchronized Connection getConnection() throws IOException {
 		ConnectionFactory factory = new ConnectionFactory();
