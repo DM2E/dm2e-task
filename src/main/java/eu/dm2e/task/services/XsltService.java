@@ -22,9 +22,10 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-import eu.dm2e.task.model.NS;
 import eu.dm2e.task.util.CatchallJerseyException;
 import eu.dm2e.task.util.RabbitConnection;
+import eu.dm2e.ws.Config;
+import eu.dm2e.ws.NS;
 import eu.dm2e.ws.grafeo.GResource;
 import eu.dm2e.ws.grafeo.Grafeo;
 import eu.dm2e.ws.grafeo.jena.GrafeoImpl;
@@ -34,17 +35,15 @@ import eu.dm2e.ws.services.data.AbstractRDFService;
 public class XsltService extends AbstractRDFService {
 	
 	private Logger log = Logger.getLogger(getClass().getName());
-	private static final String SERVICE_DESCRIPTION_RESOURCE = "/xslt-service-description.ttl";
-	private static final String SERVICE_RABBIT_QUEUE = "eu.dm2e.task.worker.XsltWorker";
+	private static final String SERVICE_RABBIT_QUEUE = Config.getString("dm2e.service.xslt.worker_queue");
+	private static final String SERVICE_DESCRIPTION_RESOURCE = Config.getString("dm2e.service.xslt.description_resource");
 	
-//	private static final String NS_XSLT_SERVICE = "http://omnom.dm2e.eu/service/xslt#";
-//	private static final String PROPERTY_XML_SOURCE = NS_XSLT_SERVICE + "xmlSource";
-//	private static final String PROPERTY_XSLT_SOURCE = NS_XSLT_SERVICE + "xsltSource";
+//	private static final String NS_XSLT_SERVICE = Config.getString("dm2e.service.xslt.namespace");
 	private static final String PROPERTY_HAS_WEB_SERVICE_CONFIG = NS.DM2E + "hasWebServiceConfig";
 	
 	// TODO shouldnot be hardwired
-	private static final String URI_JOB_SERVICE = "http://localhost:9110/job";
-	private static final String URI_CONFIG_SERVICE = "http://localhost:9998/data/configurations";
+	private static final String URI_JOB_SERVICE = Config.getString("dm2e.service.job.base_uri");
+	private static final String URI_CONFIG_SERVICE = Config.getString("dm2e.service.config.base_uri");
 	
 	/**
 	 * Describes this service.
@@ -91,14 +90,14 @@ public class XsltService extends AbstractRDFService {
 		log.info("Posting the job to the worker queue");
 		byte[] messageBytes = jobUri.toString().getBytes();
 		Channel channel;
+		log.info(SERVICE_RABBIT_QUEUE);
 		try {
 			channel = RabbitConnection.getChannel();
 			channel.basicPublish("", SERVICE_RABBIT_QUEUE, null, messageBytes);
 			channel.close();
 		} catch (Exception e) {
-			throw new CatchallJerseyException(e);
+			return throwServiceError(e);
 		}
-		
 		
 		// return location of the job
 		return Response.created(jobUri).entity(getResponseEntity(g)).build();
@@ -111,6 +110,7 @@ public class XsltService extends AbstractRDFService {
 	public Response postTransformation(@Context UriInfo uriInfo, File body) throws CatchallJerseyException {
 		
 		WebResource configResource = Client.create().resource(URI_CONFIG_SERVICE);
+		log.severe(URI_CONFIG_SERVICE);
 		
 		// post the config
 		log.info("Persisting config.");
