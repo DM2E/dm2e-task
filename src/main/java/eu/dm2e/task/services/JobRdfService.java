@@ -4,6 +4,7 @@ import java.io.File;
 import java.net.URI;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.ws.rs.Consumes;
@@ -20,10 +21,9 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.NodeIterator;
 
 import eu.dm2e.task.model.JobStatus;
-import eu.dm2e.task.model.LogLevel;
-import eu.dm2e.task.model.NS;
 import eu.dm2e.task.util.CatchallJerseyException;
 import eu.dm2e.ws.DM2E_MediaType;
+import eu.dm2e.ws.NS;
 import eu.dm2e.ws.grafeo.GLiteral;
 import eu.dm2e.ws.grafeo.GResource;
 import eu.dm2e.ws.grafeo.Grafeo;
@@ -37,6 +37,14 @@ import eu.dm2e.ws.services.data.AbstractRDFService;
 public class JobRdfService extends AbstractRDFService {
 
 	private Logger log = Logger.getLogger(getClass().getName());
+	// TODO there must be an easier way
+	private static Level[] logLevels = {
+		Level.FINEST,
+		Level.FINER,
+		Level.INFO,
+		Level.WARNING,
+		Level.SEVERE,
+	};
 	//@formatter:off
 	private static final String
 			JOB_STATUS_PROP = NS.DM2E + "status",
@@ -253,27 +261,38 @@ public class JobRdfService extends AbstractRDFService {
 	@GET
 	@Path("/{id}/log")
 	public Response listLogEntries(
-			@QueryParam("level") String level
+			@QueryParam("minLevel") String minLevelStr
 			)
 			throws CatchallJerseyException {
 
 		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/log$", "");
 		String whereClause = "?s ?p ?o.\n ?s a <" + NS.DM2ELOG + "LogEntry>. \n";	
 		GrafeoImpl g = new GrafeoImpl();
-		if (null != level && null != Enum.valueOf(LogLevel.class, level))  {
-			LogLevel levelRequested = Enum.valueOf(LogLevel.class, level);
-			StringBuilder levelRegexSb = new StringBuilder(level);
-			for (LogLevel l : LogLevel.values()) {
-				if (l.ordinal() <= levelRequested.ordinal())
-					continue;
-				levelRegexSb.append("|");
-				levelRegexSb.append(l.toString());
+		
+		Level minLevel;
+		if (minLevelStr != null){
+			minLevelStr = minLevelStr.replace("TRACE", "FINE");
+			minLevelStr = minLevelStr.replace("DEBUG", "FINE");
+			try {
+				minLevel = Level.parse(minLevelStr);
+				StringBuilder levelRegexSb = new StringBuilder(minLevelStr);
+				for (Level l : logLevels) {
+					log.info(""+l.intValue());
+					if (l.intValue() < minLevel.intValue())
+						continue;
+					levelRegexSb.append("|");
+					levelRegexSb.append(l.toString());
+				}
+				whereClause = String.format("\n%s ?s <%s> ?level.\n FILTER regex(?level,\"%s\")",
+						whereClause,
+						NS.DM2ELOG + "level",
+						levelRegexSb.toString());
 			}
-			whereClause = String.format("\n%s ?s <%s> ?level.\n FILTER regex(?level,\"%s\")",
-					whereClause,
-					NS.DM2ELOG + "level",
-					levelRegexSb.toString());
+			catch (NullPointerException | IllegalArgumentException e) { 
+				return throwServiceError("Invalid 'minLevel' URI parameter.");
+			}
 		}
+			
 		log.info(whereClause);
 		//@formatter:off
 		try { new SparqlConstruct.Builder()
