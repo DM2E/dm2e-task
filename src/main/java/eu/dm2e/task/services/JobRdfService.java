@@ -2,7 +2,6 @@ package eu.dm2e.task.services;
 
 import java.io.File;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
@@ -17,8 +16,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.NodeIterator;
 
@@ -26,13 +23,13 @@ import eu.dm2e.task.model.JobStatus;
 import eu.dm2e.task.model.LogLevel;
 import eu.dm2e.task.model.NS;
 import eu.dm2e.task.util.CatchallJerseyException;
-import eu.dm2e.task.util.DM2E_MediaType;
-import eu.dm2e.task.util.SparqlConstruct;
-import eu.dm2e.task.util.SparqlUpdate;
+import eu.dm2e.ws.DM2E_MediaType;
 import eu.dm2e.ws.grafeo.GLiteral;
 import eu.dm2e.ws.grafeo.GResource;
 import eu.dm2e.ws.grafeo.Grafeo;
 import eu.dm2e.ws.grafeo.jena.GrafeoImpl;
+import eu.dm2e.ws.grafeo.jena.SparqlConstruct;
+import eu.dm2e.ws.grafeo.jena.SparqlUpdate;
 import eu.dm2e.ws.services.data.AbstractRDFService;
 //import java.util.ArrayList;
 
@@ -53,7 +50,7 @@ public class JobRdfService extends AbstractRDFService {
 			throws CatchallJerseyException {
 		// kb: need to use Jena model
 		GrafeoImpl g = new GrafeoImpl();
-		g.readFromEndpoint(NS.ENDPOINT, getRequestUriString());
+		g.readFromEndpoint(NS.ENDPOINT, getRequestUriWithoutQuery());
 		Model jenaModel = g.getModel();
 		NodeIterator iter = jenaModel.listObjectsOfProperty(jenaModel.createProperty(NS.DM2E
 				+ "status"));
@@ -124,7 +121,7 @@ public class JobRdfService extends AbstractRDFService {
 	@Path("/{id}/status")
 	public Response getJobStatus(@PathParam("id") String id)
 			throws CatchallJerseyException {
-		String resourceUriStr = getRequestUriString().replaceAll("/status$", "");
+		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/status$", "");
 		return Response.ok().entity(getJobStatusInternal(resourceUriStr).toString()).build();
 	}
 
@@ -133,7 +130,7 @@ public class JobRdfService extends AbstractRDFService {
 	@Consumes(MediaType.WILDCARD)
 	public Response updateJobStatus(@PathParam("id") String id, String newStatus)
 			throws CatchallJerseyException {
-		String resourceUriStr = getRequestUriString().replaceAll("/status$", "");
+		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/status$", "");
 
 		// validate if this is a valid status
 		try {
@@ -158,8 +155,14 @@ public class JobRdfService extends AbstractRDFService {
 				JOB_STATUS_PROP);
 		String clauseInsert = String.format("<%s> <%s> \"%s\".", resourceUriStr, JOB_STATUS_PROP,
 				newStatus);
-		new SparqlUpdate.Builder().graph(resourceUriStr).delete(clauseDelete).insert(clauseInsert)
-				.where(clauseDelete).endpoint(NS.ENDPOINT_STATEMENTS).build().execute();
+		// @formatter:off
+		new SparqlUpdate.Builder()
+			.graph(resourceUriStr)
+			.delete(clauseDelete)
+			.insert(clauseInsert)
+			.where(clauseDelete)
+			.endpoint(NS.ENDPOINT_STATEMENTS).build().execute();
+		// @formatter:on
 
 		// return the new status live
 		return getJobStatus(id);
@@ -175,7 +178,7 @@ public class JobRdfService extends AbstractRDFService {
 	public Response addLogEntryAsRDF(File logRdfStr) throws CatchallJerseyException {
 	//@formatter:on
 
-		String resourceUriStr = getRequestUriString().replaceAll("/log$", "");
+		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/log$", "");
 
 		Grafeo g = new GrafeoImpl();
 		long timestamp = new Date().getTime();
@@ -189,7 +192,7 @@ public class JobRdfService extends AbstractRDFService {
 		}
 		GResource blank = g.findTopBlank();
 		if (null == blank) throw new CatchallJerseyException("Must contain blank node");
-		String logEntryUriStr = getRequestUriString() + "/log/" + timestamp;
+		String logEntryUriStr = getRequestUriWithoutQuery() + "/log/" + timestamp;
 		g.addTriple(resourceUriStr, JOB_LOGENTRY_PROP, logEntryUriStr);
 		g.addTriple(logEntryUriStr, "rdf:type", NS.DM2ELOG + "LogEntry");
 		g.addTriple(logEntryUriStr, NS.DM2ELOG + "timestamp", timestampLiteral);
@@ -206,7 +209,8 @@ public class JobRdfService extends AbstractRDFService {
 	public Response addLogEntryAsText(String logString)
 			throws CatchallJerseyException {
 
-		String resourceUriStr = getRequestUriString().replaceAll("/log$", "");
+//		String resourceUri = getRequestUriWithoutQuery();
+		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/log$", "");
 
 		Grafeo g = new GrafeoImpl();
 
@@ -214,7 +218,7 @@ public class JobRdfService extends AbstractRDFService {
 		log.info("Adding timestamp");
 		long timestamp = new Date().getTime();
 		GLiteral timestampLiteral = g.date(timestamp);
-		String logEntryUriStr = getRequestUriString() + "/" + timestamp;
+		String logEntryUriStr = getRequestUriWithoutQuery().toString() + "/" + timestamp;
 		g.addTriple(resourceUriStr, JOB_LOGENTRY_PROP, logEntryUriStr);
 		g.addTriple(logEntryUriStr, "rdf:type", NS.DM2ELOG + "LogEntry");
 		g.addTriple(logEntryUriStr, NS.DM2ELOG + "timestamp", timestampLiteral);
@@ -253,7 +257,7 @@ public class JobRdfService extends AbstractRDFService {
 			)
 			throws CatchallJerseyException {
 
-		String resourceUriStr = getRequestUriString().replaceAll("/log$", "");
+		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/log$", "");
 		String whereClause = "?s ?p ?o.\n ?s a <" + NS.DM2ELOG + "LogEntry>. \n";	
 		GrafeoImpl g = new GrafeoImpl();
 		if (null != level && null != Enum.valueOf(LogLevel.class, level))  {
