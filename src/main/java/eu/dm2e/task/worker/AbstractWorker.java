@@ -1,11 +1,13 @@
-package eu.dm2e.task.worker;
-
+package eu.dm2e.task.worker; 
 import java.io.IOException;
+import java.util.List;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConsumerCancelledException;
 import com.rabbitmq.client.QueueingConsumer;
 import com.rabbitmq.client.ShutdownSignalException;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.WebResource;
 
 import eu.dm2e.task.util.RabbitConnection;
 
@@ -25,11 +27,12 @@ public abstract class AbstractWorker implements Runnable {
 	 * @throws InterruptedException
 	 */
 	abstract void handleMessage(String message) throws InterruptedException;
-
-	/**
-	 * @return name of the queue name this worker is listening on
-	 */
-	abstract String getRabbitQueueName();
+	
+	public abstract String getServiceUri();
+	
+	public abstract Client getClient();
+	
+	public abstract String getRabbitQueueName();
 
 	/*
 	 * (non-Javadoc)
@@ -68,5 +71,7 @@ public abstract class AbstractWorker implements Runnable {
 			RabbitConnection.closeChannel(channel);
 		}
 	}
-
+	
+	public void waitForResources(List<WebResource> unreadyResources) {
+	}
 }
