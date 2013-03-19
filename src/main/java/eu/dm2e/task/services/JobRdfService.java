@@ -24,7 +24,6 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.NodeIterator;
 
 import eu.dm2e.task.model.JobStatusConstants;
-import eu.dm2e.task.util.CatchallJerseyException;
 import eu.dm2e.ws.Config;
 import eu.dm2e.ws.DM2E_MediaType;
 import eu.dm2e.ws.NS;
@@ -36,37 +35,32 @@ import eu.dm2e.ws.grafeo.jena.SparqlConstruct;
 import eu.dm2e.ws.grafeo.jena.SparqlSelect;
 import eu.dm2e.ws.grafeo.jena.SparqlUpdate;
 import eu.dm2e.ws.services.data.AbstractRDFService;
+
 //import java.util.ArrayList;
 
 @Path("/job")
 public class JobRdfService extends AbstractRDFService {
-	
+
 	private Logger log = Logger.getLogger(getClass().getName());
 	// TODO there must be an easier way
-	private static Level[] logLevels = {
-		Level.FINEST,
-		Level.FINER,
-		Level.INFO,
-		Level.WARNING,
-		Level.SEVERE,
-	};
+	private static Level[] logLevels = { Level.FINEST, Level.FINER, Level.INFO, Level.WARNING,
+			Level.SEVERE, };
 	//@formatter:off
 	private static final String
 			JOB_STATUS_PROP = NS.DM2E + "status",
 			JOB_LOGENTRY_PROP = NS.DM2E + "hasLogEntry",
 			SERVICE_DESCRIPTION_RESOURCE = Config.getString("dm2e.service.config.description_resource");
 	//@formatter:on
-	
+
 	@Override
 	public String getServiceDescriptionResourceName() {
 		return SERVICE_DESCRIPTION_RESOURCE;
-	}	
+	}
 
 	@GET
 	@Path("/{resourceID}")
 	@Consumes(MediaType.WILDCARD)
-	public Response getJob(@PathParam("resourceID") String resourceID)
-			throws CatchallJerseyException {
+	public Response getJob(@PathParam("resourceID") String resourceID) {
 		// kb: need to use Jena model
 		GrafeoImpl g = new GrafeoImpl();
 		g.readFromEndpoint(NS.ENDPOINT, getRequestUriWithoutQuery());
@@ -74,7 +68,7 @@ public class JobRdfService extends AbstractRDFService {
 		NodeIterator iter = jenaModel.listObjectsOfProperty(jenaModel.createProperty(NS.DM2E
 				+ "status"));
 		if (null == iter || !iter.hasNext()) {
-			throw new CatchallJerseyException("No Job Status in this one. Not good.");
+			return throwServiceError("No Job Status in this one. Not good.");
 		}
 		String jobStatus = iter.next().toString();
 		int httpStatus;
@@ -89,8 +83,7 @@ public class JobRdfService extends AbstractRDFService {
 
 	@POST
 	@Consumes(MediaType.WILDCARD)
-	public Response newJob(File bodyAsFile)
-			throws CatchallJerseyException {
+	public Response newJob(File bodyAsFile) {
 		log.info("Config posted.");
 		// TODO use Exception to return proper HTTP response if input can not be
 		// parsed as RDF
@@ -99,12 +92,11 @@ public class JobRdfService extends AbstractRDFService {
 			g = new GrafeoImpl(bodyAsFile);
 			// } catch (MalformedURLException e) {
 		} catch (Exception e) {
-			throw new CatchallJerseyException(e);
+			return throwServiceError(e);
 		}
 		GResource blank = g.findTopBlank();
 		if (blank == null) {
-			throw new CatchallJerseyException(
-					"No top blank node found. Check your job description.");
+			return throwServiceError("No top blank node found. Check your job description.");
 		}
 		String id = "" + new Date().getTime();
 		String uri = uriInfo.getRequestUri() + "/" + id;
@@ -122,15 +114,15 @@ public class JobRdfService extends AbstractRDFService {
 		return null;
 	}
 
-	public JobStatusConstants getJobStatusInternal(String jobUriStr)
-			throws CatchallJerseyException {
+	public JobStatusConstants getJobStatusInternal(String jobUriStr) throws Exception
+			 {
 		GrafeoImpl g = new GrafeoImpl();
 		g.readFromEndpoint(NS.ENDPOINT, jobUriStr);
 		Model jenaModel = g.getModel();
 		NodeIterator iter = jenaModel.listObjectsOfProperty(jenaModel.createProperty(NS.DM2E
 				+ "status"));
 		if (null == iter || !iter.hasNext()) {
-			throw new CatchallJerseyException("No Job Status in this one. Not good.");
+			throw new Exception("No Job Status in this one. Not good.");
 		}
 		String jobStatus = iter.next().toString();
 		return Enum.valueOf(JobStatusConstants.class, jobStatus);
@@ -139,34 +131,37 @@ public class JobRdfService extends AbstractRDFService {
 	@GET
 	@Path("/{id}/status")
 	public Response getJobStatus(@PathParam("id") String id)
-			throws CatchallJerseyException {
+			 {
 		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/status$", "");
-		return Response.ok().entity(getJobStatusInternal(resourceUriStr).toString()).build();
+		try {
+			return Response.ok().entity(getJobStatusInternal(resourceUriStr).toString()).build();
+		} catch (Exception e) {
+			return throwServiceError(e);
+		}
 	}
 
 	@PUT
 	@Path("/{id}/status")
 	@Consumes(MediaType.WILDCARD)
 	public Response updateJobStatus(@PathParam("id") String id, String newStatus)
-			throws CatchallJerseyException {
+			 {
 		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/status$", "");
 
 		// validate if this is a valid status
 		try {
-			if (null == newStatus) throw new CatchallJerseyException("No status sent.");
+			if (null == newStatus) return throwServiceError("No status sent.");
 			Enum.valueOf(JobStatusConstants.class, newStatus);
 		} catch (Exception e) {
-			throw new CatchallJerseyException("Invalid status type: " + newStatus);
+			return throwServiceError("Invalid status type: " + newStatus);
 		}
 
 		// get the old status
 		String oldStatus;
 		try {
 			oldStatus = getJobStatusInternal(resourceUriStr).toString();
-			if (null == oldStatus) throw new CatchallJerseyException(
-					"No status for this job found. Bad.");
+			if (null == oldStatus) return throwServiceError("No status for this job found. Bad.");
 		} catch (Exception e) {
-			throw new CatchallJerseyException(e);
+			return throwServiceError(e);
 		}
 
 		// replace the job status
@@ -194,7 +189,7 @@ public class JobRdfService extends AbstractRDFService {
 				DM2E_MediaType.APPLICATION_RDF_XML,
 				DM2E_MediaType.TEXT_RDF_N3, 
 				DM2E_MediaType.TEXT_TURTLE, })
-	public Response addLogEntryAsRDF(File logRdfStr) throws CatchallJerseyException {
+	public Response addLogEntryAsRDF(File logRdfStr)  {
 	//@formatter:on
 
 		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/log$", "");
@@ -207,16 +202,16 @@ public class JobRdfService extends AbstractRDFService {
 			g = new GrafeoImpl(logRdfStr);
 			// TODO validate if this is a valid log entry
 		} catch (Exception e) {
-			throw new CatchallJerseyException(e);
+			return throwServiceError(e);
 		}
 		GResource blank = g.findTopBlank();
-		if (null == blank) throw new CatchallJerseyException("Must contain blank node");
+		if (null == blank) return throwServiceError("Must contain blank node");
 		String logEntryUriStr = getRequestUriWithoutQuery() + "/log/" + timestamp;
 		g.addTriple(resourceUriStr, JOB_LOGENTRY_PROP, logEntryUriStr);
 		g.addTriple(logEntryUriStr, "rdf:type", NS.DM2ELOG + "LogEntry");
 		g.addTriple(logEntryUriStr, NS.DM2ELOG + "timestamp", timestampLiteral);
 		g.writeToEndpoint(NS.ENDPOINT_STATEMENTS, resourceUriStr);
-		
+
 		blank.rename(logEntryUriStr);
 
 		return getResponse(g);
@@ -226,9 +221,9 @@ public class JobRdfService extends AbstractRDFService {
 	@Path("/{id}/log")
 	@Consumes(MediaType.TEXT_PLAIN)
 	public Response addLogEntryAsText(String logString)
-			throws CatchallJerseyException {
+			 {
 
-//		String resourceUri = getRequestUriWithoutQuery();
+		// String resourceUri = getRequestUriWithoutQuery();
 		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/log$", "");
 
 		Grafeo g = new GrafeoImpl();
@@ -257,7 +252,7 @@ public class JobRdfService extends AbstractRDFService {
 		List<String> referers = headers.getRequestHeader("Referer");
 		if (null != referers) {
 			g.addTriple(logEntryUriStr, NS.DM2ELOG + "context", referers.get(0));
-		} 
+		}
 
 		// write the data
 		log.info("Write out log message");
@@ -270,45 +265,39 @@ public class JobRdfService extends AbstractRDFService {
 
 	@GET
 	@Path("/{id}/log")
-//	@Consumes({
-//		DM2E_MediaType.TEXT_TURTLE,
-//		DM2E_MediaType.TEXT_RDF_N3,
-//		DM2E_MediaType.APPLICATION_RDF_TRIPLES,
-//		DM2E_MediaType.APPLICATION_RDF_XML,
-//	})
-	public Response listLogEntries(
-			@QueryParam("minLevel") String minLevelStr
-			)
-			throws CatchallJerseyException {
+	// @Consumes({
+	// DM2E_MediaType.TEXT_TURTLE,
+	// DM2E_MediaType.TEXT_RDF_N3,
+	// DM2E_MediaType.APPLICATION_RDF_TRIPLES,
+	// DM2E_MediaType.APPLICATION_RDF_XML,
+	// })
+	public Response listLogEntries(@QueryParam("minLevel") String minLevelStr)
+			 {
 
 		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/log$", "");
-		String whereClause = "?s ?p ?o.\n ?s a <" + NS.DM2ELOG + "LogEntry>. \n";	
+		String whereClause = "?s ?p ?o.\n ?s a <" + NS.DM2ELOG + "LogEntry>. \n";
 		GrafeoImpl g = new GrafeoImpl();
-		
+
 		Level minLevel;
-		if (minLevelStr != null){
+		if (minLevelStr != null) {
 			minLevelStr = minLevelStr.replace("TRACE", "FINE");
 			minLevelStr = minLevelStr.replace("DEBUG", "FINE");
 			try {
 				minLevel = Level.parse(minLevelStr);
 				StringBuilder levelRegexSb = new StringBuilder(minLevelStr);
 				for (Level l : logLevels) {
-					log.info(""+l.intValue());
-					if (l.intValue() < minLevel.intValue())
-						continue;
+					log.info("" + l.intValue());
+					if (l.intValue() < minLevel.intValue()) continue;
 					levelRegexSb.append("|");
 					levelRegexSb.append(l.toString());
 				}
 				whereClause = String.format("\n%s ?s <%s> ?level.\n FILTER regex(?level,\"%s\")",
-						whereClause,
-						NS.DM2ELOG + "level",
-						levelRegexSb.toString());
-			}
-			catch (NullPointerException | IllegalArgumentException e) { 
+						whereClause, NS.DM2ELOG + "level", levelRegexSb.toString());
+			} catch (NullPointerException | IllegalArgumentException e) {
 				return throwServiceError("Invalid 'minLevel' URI parameter.");
 			}
 		}
-			
+
 		log.info(whereClause);
 		//@formatter:off
 		try { new SparqlConstruct.Builder()
@@ -319,55 +308,48 @@ public class JobRdfService extends AbstractRDFService {
 				.build()
 				.execute(g);
 
-		} catch (Exception e) { throw new CatchallJerseyException(e); }
+		} catch (Exception e) { return throwServiceError(e); }
 		//@formatter:on
 		return getResponse(g);
 	}
-	
+
 	@GET
 	@Path("/{id}/log")
-	@Produces({"text/x-log"})
-	public Response listLogEntriesAsLogfile(
-			@QueryParam("minLevel") String minLevelStr
-			)
-			throws CatchallJerseyException {
+	@Produces({ "text/x-log" })
+	public Response listLogEntriesAsLogfile(@QueryParam("minLevel") String minLevelStr) {
 
 		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/log$", "");
 		StringBuilder whereClauseBuilder = new StringBuilder();
-		whereClauseBuilder.append(String.format("?s a <%s>. ",       NS.DM2ELOG + "LogEntry"));
-		whereClauseBuilder.append(String.format("?s <%s> ?level.",   NS.DM2ELOG + "level"));
-		whereClauseBuilder.append(String.format("?s <%s> ?msg.",     NS.DM2ELOG + "message"));
-		whereClauseBuilder.append(String.format("?s <%s> ?date.",    NS.DM2ELOG + "timestamp"));
+		whereClauseBuilder.append(String.format("?s a <%s>. ", NS.DM2ELOG + "LogEntry"));
+		whereClauseBuilder.append(String.format("?s <%s> ?level.", NS.DM2ELOG + "level"));
+		whereClauseBuilder.append(String.format("?s <%s> ?msg.", NS.DM2ELOG + "message"));
+		whereClauseBuilder.append(String.format("?s <%s> ?date.", NS.DM2ELOG + "timestamp"));
 		whereClauseBuilder.append(String.format("?s <%s> ?context.", NS.DM2ELOG + "context"));
 		String whereClause = whereClauseBuilder.toString();
 		String selectedVars = "?msg ?date ?level ?context";
-		
+
 		Level minLevel;
-		if (minLevelStr != null){
+		if (minLevelStr != null) {
 			minLevelStr = minLevelStr.replace("TRACE", "FINE");
 			minLevelStr = minLevelStr.replace("DEBUG", "FINE");
 			try {
 				minLevel = Level.parse(minLevelStr);
 				StringBuilder levelRegexSb = new StringBuilder(minLevelStr);
 				for (Level l : logLevels) {
-					if (l.intValue() < minLevel.intValue())
-						continue;
+					if (l.intValue() < minLevel.intValue()) continue;
 					levelRegexSb.append("|");
 					levelRegexSb.append(l.toString());
 				}
 				whereClause = String.format("\n%s ?s <%s> ?level.\n FILTER regex(?level,\"%s\")",
-						whereClause,
-						NS.DM2ELOG + "level",
-						levelRegexSb.toString());
-			}
-			catch (NullPointerException | IllegalArgumentException e) { 
+						whereClause, NS.DM2ELOG + "level", levelRegexSb.toString());
+			} catch (NullPointerException | IllegalArgumentException e) {
 				return throwServiceError("Invalid 'minLevel' URI parameter.");
 			}
 		}
-			
+
 		log.info(whereClause);
 		StringBuilder outputBuilder = new StringBuilder();
-		try { 
+		try {
 			//@formatter:off
 			SparqlSelect sparqlSelect = new SparqlSelect.Builder()
 				.endpoint(NS.ENDPOINT)
@@ -388,9 +370,9 @@ public class JobRdfService extends AbstractRDFService {
 				outputBuilder.append(row.get("date").asLiteral().getValue());
 				outputBuilder.append(": ");
 				outputBuilder.append(row.get("msg"));
-//				outputBuilder.append("\t<");
-//				outputBuilder.append(row.get("context"));
-//				outputBuilder.append(">");
+				// outputBuilder.append("\t<");
+				// outputBuilder.append(row.get("context"));
+				// outputBuilder.append(">");
 				outputBuilder.append("\n");
 			}
 		} catch (Exception e) {

@@ -21,7 +21,6 @@ import com.sun.jersey.api.client.WebResource.Builder;
 import com.sun.jersey.multipart.FormDataBodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
 
-import eu.dm2e.task.model.JobStatusConstants;
 import eu.dm2e.task.util.JobLogger;
 import eu.dm2e.task.util.JobStatus;
 import eu.dm2e.ws.Config;

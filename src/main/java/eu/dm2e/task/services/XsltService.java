@@ -1,7 +1,6 @@
 package eu.dm2e.task.services;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.net.URI;
 import java.util.logging.Logger;
 
@@ -22,7 +21,6 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-import eu.dm2e.task.util.CatchallJerseyException;
 import eu.dm2e.task.util.RabbitConnection;
 import eu.dm2e.ws.Config;
 import eu.dm2e.ws.NS;
@@ -53,7 +51,7 @@ public class XsltService extends AbstractRDFService {
 	 * Describes this service.
 	 */
 	@GET
-	public Response getDescription(@Context UriInfo uriInfo) throws CatchallJerseyException {
+	public Response getDescription(@Context UriInfo uriInfo)  {
         Grafeo g;
 		try {
 			g = getServiceDescriptionGrafeo();
@@ -66,7 +64,7 @@ public class XsltService extends AbstractRDFService {
 	
 	@PUT
 	@Consumes(MediaType.TEXT_PLAIN)
-	public Response putTransformation(String configURI) throws CatchallJerseyException {
+	public Response putTransformation(String configURI)  {
 		
 		WebResource jobResource = Client.create().resource(URI_JOB_SERVICE);	
 		
@@ -114,7 +112,7 @@ public class XsltService extends AbstractRDFService {
 
 	@POST
 	@Consumes(MediaType.WILDCARD)
-	public Response postTransformation(@Context UriInfo uriInfo, File body) throws CatchallJerseyException {
+	public Response postTransformation(@Context UriInfo uriInfo, File body)  {
 		
 		WebResource configResource = Client.create().resource(URI_CONFIG_SERVICE);
 		log.severe(URI_CONFIG_SERVICE);
