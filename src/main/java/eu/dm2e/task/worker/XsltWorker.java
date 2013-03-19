@@ -1,6 +1,5 @@
 package eu.dm2e.task.worker;
 
-import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
 import java.net.URL;
 import java.util.ArrayList;
@@ -22,11 +21,12 @@ import com.sun.jersey.api.client.WebResource.Builder;
 import com.sun.jersey.multipart.FormDataBodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
 
+import eu.dm2e.task.model.JobStatusConstants;
 import eu.dm2e.task.util.JobLogger;
+import eu.dm2e.task.util.JobStatus;
 import eu.dm2e.ws.Config;
 import eu.dm2e.ws.DM2E_MediaType;
 import eu.dm2e.ws.NS;
-import eu.dm2e.ws.grafeo.Grafeo;
 import eu.dm2e.ws.grafeo.jena.GrafeoImpl;
 
 /**
@@ -78,18 +78,20 @@ public class XsltWorker extends AbstractWorker {
 	public void handleMessage(String jobUri)
 			throws InterruptedException {
 
-		// WebResource jobResource = client.resource(jobUri);
-		WebResource jobStatusResource = getClient().resource(jobUri + "/status");
+		// Web Resource for the file
 		WebResource fileResource = getClient().resource(FILE_SERVICE_URI);
 
 		// create a logger that logs both to console our job resource
-		JobLogger log = new JobLogger(this, jobUri);
+		JobLogger jobLog = new JobLogger(this, jobUri);
+		
+		// Wrapper to change job status
+		JobStatus jobStatus = new JobStatus(this, jobUri);
 
 		// Generate Grafeo for the current job
 		GrafeoImpl jobModel = new GrafeoImpl();
 		jobModel.load(jobUri);
 
-		log.fine("Starting to handle XSLT transformation job");
+		jobLog.fine("Starting to handle XSLT transformation job");
 
 		// Find the configuration for this worker run
 		GrafeoImpl configModel = new GrafeoImpl();
@@ -99,13 +101,13 @@ public class XsltWorker extends AbstractWorker {
 					jobModel.getModel().createProperty(NS.DM2E + "hasWebServiceConfig"));
 			configUri = iter.next().toString();
 		} catch (Exception e) {
-			log.severe("Job is missing hasWebServiceConfig: " + e.toString());
-			jobStatusResource.put("FAILED");
+			jobLog.severe("Job is missing hasWebServiceConfig: " + e.toString());
+			jobStatus.failed();
 			return;
 		}
 
 		// Populate the configuration model
-		log.info("Config URL: " + configUri);
+		jobLog.info("Config URL: " + configUri);
 		configModel.load(configUri);
 
 		// Get the input parameters
@@ -116,55 +118,35 @@ public class XsltWorker extends AbstractWorker {
 			iter = configModel.getModel().listObjectsOfProperty(
 					jobModel.getModel().createProperty(PROPERTY_XML_SOURCE));
 			xmlUrl = iter.next().toString();
-			log.info(xmlUrl);
+			jobLog.info(xmlUrl);
 			iter = configModel.getModel().listObjectsOfProperty(
 					jobModel.getModel().createProperty(PROPERTY_XSLT_SOURCE));
 			xsltUrl = iter.next().toString();
 		} catch (Exception e) {
-			log.severe("Job is missing either xmlSource or xsltSource" + e.toString());
-			jobStatusResource.put("FAILED");
+			jobLog.severe("Job is missing either xmlSource or xsltSource" + e.toString());
+			jobStatus.failed();
 			return;
 		}
 
-		log.info("XML URL: " + xmlUrl);
-		log.info("XSL URL: " + xsltUrl);
+		jobLog.info("XML URL: " + xmlUrl);
+		jobLog.info("XSL URL: " + xsltUrl);
 
-		// @TODO move this to the ABC
 		// Make sure that the resources are available
+		jobLog.fine("Waiting for all resources to become ready.");
 		ArrayList<WebResource> unreadyResources = new ArrayList<WebResource>();
 		unreadyResources.add(client.resource(xsltUrl));
 		unreadyResources.add(client.resource(xmlUrl));
-		boolean allResourcesReady = false;
-		log.fine("Waiting for all resources to become ready.");
-		while (!allResourcesReady) {
-			log.fine("Waiting for all resources to become ready.");
-			for (WebResource r : unreadyResources) {
-				if (!r.getURI().getScheme().matches("^(h|f)ttps?")) {
-					log.severe("Not an http/ftp link: " + r.getURI().getScheme());
-					log.severe("Not an http/ftp link: " + r.getURI().getScheme());
-					jobStatusResource.put("FAILED");
-					return;
-				}
-				log.fine("Testing HEAD on " + r.getURI());
-				// TODO BUG here
-				ClientResponse resp = r.head();
-				if (resp.getStatus() == 200) {
-					unreadyResources.remove(r);
-					log.fine("Resource " + r.getURI() + " is ready now.");
-				} else {
-					log.severe("Resource " + r.getURI() + " not available. Will croak for now.");
-					log.severe("Resource " + r.getURI() + " not available. Will croak for now.");
-					jobStatusResource.put("FAILED");
-					return;
-				}
-			}
-			allResourcesReady = true;
+		try {
+			ensureResourcesReady(unreadyResources, jobLog);
+		} catch (Throwable e) {
+			jobLog.severe(e.toString());
+			jobStatus.failed();
 		}
 
-		log.info("Starting transformation");
+		jobLog.info("Starting transformation");
 
 		// update job status
-		jobStatusResource.put("STARTED");
+		jobStatus.started();
 		TransformerFactory tFactory = TransformerFactory.newInstance();
 		StringWriter xslResultStrWriter = new StringWriter();
 		try {
@@ -178,11 +160,11 @@ public class XsltWorker extends AbstractWorker {
 			transformer.transform(xmlSource, xslResult);
 
 		} catch (Exception e) {
-			log.severe("Error during XSLT transformation: " + e);
+			jobLog.severe("Error during XSLT transformation: " + e);
 		}
 
 		// TODO do something with outstream
-		log.info("Writing result to file service.");
+		jobLog.info("Writing result to file service.");
 		String xslResultStr = xslResultStrWriter.toString();
 		if (xslResultStr.length() > 0) {
 			FormDataMultiPart form = new FormDataMultiPart();
@@ -199,26 +181,23 @@ public class XsltWorker extends AbstractWorker {
 			Model metaModel = metaGrafeo.getModel();
 			Resource blank = metaModel.createResource();
 			metaModel.add(blank, metaModel.createProperty(NS.DM2E + "generatedBy"), metaModel.createResource(jobUri));
-			String metaNTriples = metaGrafeo.getNTriples().replaceAll("_[^\\s]+", "[]");
-//			String metaNTriples = metaGrafeo.getNTriples();	
+//			String metaNTriples = metaGrafeo.getNTriples().replaceAll("_[^\\s]+", "[]");
+			String metaNTriples = metaGrafeo.getNTriples();	
 			MediaType n3_type = MediaType.valueOf(DM2E_MediaType.TEXT_RDF_N3);
 			FormDataBodyPart metaFDBP = new FormDataBodyPart("meta", metaNTriples, n3_type);
 			form.bodyPart(metaFDBP);
 			
 
-			log.info(fileResource.toString());
-			log.info(fileResource.getURI().toString());
-			log.info(form.toString());
 			Builder builder = fileResource
 					.type(MediaType.MULTIPART_FORM_DATA)
 					.accept(DM2E_MediaType.TEXT_TURTLE)
 					.entity(form);
 			ClientResponse resp = builder.post(ClientResponse.class);
 			if (resp.getStatus() >= 400) {
-				log.severe("File storage failed: " + resp.getEntity(String.class));
+				jobLog.severe("File storage failed: " + resp.getEntity(String.class));
 			}
 			else {
-				log.info("File stored at: " + resp.getLocation());
+				jobLog.info("File stored at: " + resp.getLocation());
 				// store the file in the job
 				jobModel.addTriple(jobUri, NS.DM2E + "resultResource", resp.getLocation().toString());
 				
@@ -228,7 +207,7 @@ public class XsltWorker extends AbstractWorker {
 		}
 
 		// Update job status
-		jobStatusResource.put("FINISHED");
-		log.info("XSLT Transformation complete.");
+		jobLog.info("XSLT Transformation complete.");
+		jobStatus.finished();
 	}
 }
