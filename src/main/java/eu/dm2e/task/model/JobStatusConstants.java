@@ -11,7 +11,7 @@ package eu.dm2e.task.model;
  * @author kb
  *
  */
-public enum JobStatus {
+public enum JobStatusConstants {
 	NOT_STARTED,
 	STARTED,
 	WAITING,
