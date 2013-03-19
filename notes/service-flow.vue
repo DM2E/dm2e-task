@@ -1,14 +1,14 @@
 <!-- Tufts VUE 3.1.1 concept-map (service-flow.vue) 2013-03-19 -->
 <!-- Tufts VUE: http://vue.tufts.edu/ -->
 <!-- Do Not Remove: VUE mapping @version(1.1) jar:file:/usr/share/java/vue/VUE.jar!/tufts/vue/resources/lw_mapping_1_1.xml -->
-<!-- Do Not Remove: Saved date Tue Mar 19 12:29:47 CET 2013 by kb on platform Linux 3.8.2-1-ARCH in JVM 1.7.0_17-b02 -->
+<!-- Do Not Remove: Saved date Tue Mar 19 15:22:05 CET 2013 by kb on platform Linux 3.8.2-1-ARCH in JVM 1.7.0_17-b02 -->
 <!-- Do Not Remove: Saving version @(#)VUE: built March 16 2011 at 1142 by vue on Linux 2.4.21-63.EL i386 JVM 1.5.0_06-b05(bits=32) -->
 <?xml version="1.0" encoding="US-ASCII"?>
 <LW-MAP xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="none" ID="0" label="service-flow.vue"
     created="1363691560078" x="0.0" y="0.0" width="1.4E-45"
     height="1.4E-45" strokeWidth="0.0" autoSized="false">
-    <resource referenceCreated="1363692587694" size="26074"
+    <resource referenceCreated="1363702927362" size="26075"
         spec="/home/kb/workspace/dm2e-task/notes/service-flow.vue"
         type="1" xsi:type="URLResource">
         <title>service-flow.vue</title>
