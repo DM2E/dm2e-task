@@ -1,7 +1,7 @@
 package eu.dm2e.task.services;
 
 import java.io.File;
-import java.io.InputStream;
+import java.io.FileNotFoundException;
 import java.net.URI;
 import java.util.logging.Logger;
 
@@ -26,7 +26,6 @@ import eu.dm2e.task.util.CatchallJerseyException;
 import eu.dm2e.task.util.RabbitConnection;
 import eu.dm2e.ws.Config;
 import eu.dm2e.ws.NS;
-import eu.dm2e.ws.grafeo.GResource;
 import eu.dm2e.ws.grafeo.Grafeo;
 import eu.dm2e.ws.grafeo.jena.GrafeoImpl;
 import eu.dm2e.ws.services.data.AbstractRDFService;
@@ -45,22 +44,23 @@ public class XsltService extends AbstractRDFService {
 	private static final String URI_JOB_SERVICE = Config.getString("dm2e.service.job.base_uri");
 	private static final String URI_CONFIG_SERVICE = Config.getString("dm2e.service.config.base_uri");
 	
+	@Override
+	public String getServiceDescriptionResourceName() {
+		return SERVICE_DESCRIPTION_RESOURCE;
+	}
+	
 	/**
 	 * Describes this service.
 	 */
 	@GET
 	public Response getDescription(@Context UriInfo uriInfo) throws CatchallJerseyException {
-        Grafeo g = new GrafeoImpl();
-        
-        InputStream sampleDataStream = this.getClass().getResourceAsStream(SERVICE_DESCRIPTION_RESOURCE);
-        if (null == sampleDataStream) {
-            log.severe("Couldn't open " + SERVICE_DESCRIPTION_RESOURCE);
-            throw new CatchallJerseyException("Couldn't open " + SERVICE_DESCRIPTION_RESOURCE);
-        }
-        ((GrafeoImpl) g).getModel().read(sampleDataStream, null, "TURTLE");
-        GResource blank = g.findTopBlank();
-        String uri = uriInfo.getRequestUri().toString();
-        if (blank!=null) blank.rename(uri);
+        Grafeo g;
+		try {
+			g = getServiceDescriptionGrafeo();
+		} catch (Exception e) {
+			log.severe(e.toString());
+			return throwServiceError(e);
+		}
         return getResponse(g);
 	}
 	
@@ -69,6 +69,13 @@ public class XsltService extends AbstractRDFService {
 	public Response putTransformation(String configURI) throws CatchallJerseyException {
 		
 		WebResource jobResource = Client.create().resource(URI_JOB_SERVICE);	
+		
+		try{
+			validateServiceInput(configURI);
+		}
+		catch(Exception e) {
+			return throwServiceError(e);
+		}
 		
 		// create the job
 		log.info("Creating the job");

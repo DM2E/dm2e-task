@@ -20,20 +20,24 @@
 @prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
 @prefix fn:      <http://www.w3.org/2005/xpath-functions#> .
 @prefix cc:      <http://creativecommons.org/ns#> .
-
 @prefix dm2e:        <http://onto.dm2e.eu/> .
 @prefix xslt_service: <http://omnom.dm2e.eu/service/xslt/> .
 
-[]	a dm2e:WebService ;
+[]	rdf:type dm2e:WebService ,
+             owl:Class;
+    # I can't get this to work with Jena unfortunately :(
+    rdfs:subClassOf [ rdf:type owl:Restriction ;
+			          owl:onProperty xslt_service:xmlSource ;
+			          owl:cardinality "1"^^xsd:int
+				    ] ;
 	dc:description "XSLT transformation web service" ;
-	dm2e:hasParam xslt_service:xmlSource ;
-	dm2e:hasParam xslt_service:xsltSource ;
-    dm2e:hasParam xslt_service:xmlTarget .
+  	dm2e:requiredParam xslt_service:xmlSource ;
+  	dm2e:requiredParam xslt_service:xsltSource .
+#   dm2e:hasParam xslt_service:xmlTarget .
 xslt_service:xmlSource
-	a dm2e:InputParam ;
+	a dm2e:InputParam , owl:ObjectProperty ;
     dm2e:paramName "xmlSource" ;
-	owl:minCardinality 1 ;
-    rdfs:range rdfs:Class;
+#    rdfs:range rdfs:Class;
     dm2e:ofType dm2e:types:XML .
 xslt_service:xsltSource
 	a dm2e:InputParam ;
@@ -41,9 +45,9 @@ xslt_service:xsltSource
 	owl:minCardinality 1 ;
     rdfs:range rdfs:Class ;
     dm2e:ofType dm2e:types:XSLT .
-xslt_service:xmlTarget
-	a dm2e:OutputParam ;
-    dm2e:paramName "xmlTarget" ;
-	owl:minCardinality 1 ;
-    rdfs:range rdfs:Class ;
-    dm2e:ofType dm2e:types:XML .
+# xslt_service:xmlTarget
+# 	a dm2e:OutputParam ;
+#   dm2e:paramName "xmlTarget" ;
+# 	owl:minCardinality 1 ;
+#   rdfs:range rdfs:Class ;
+#   dm2e:ofType dm2e:types:XML .

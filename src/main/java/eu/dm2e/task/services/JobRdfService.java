@@ -25,6 +25,7 @@ import com.hp.hpl.jena.rdf.model.NodeIterator;
 
 import eu.dm2e.task.model.JobStatusConstants;
 import eu.dm2e.task.util.CatchallJerseyException;
+import eu.dm2e.ws.Config;
 import eu.dm2e.ws.DM2E_MediaType;
 import eu.dm2e.ws.NS;
 import eu.dm2e.ws.grafeo.GLiteral;
@@ -39,7 +40,7 @@ import eu.dm2e.ws.services.data.AbstractRDFService;
 
 @Path("/job")
 public class JobRdfService extends AbstractRDFService {
-
+	
 	private Logger log = Logger.getLogger(getClass().getName());
 	// TODO there must be an easier way
 	private static Level[] logLevels = {
@@ -52,8 +53,14 @@ public class JobRdfService extends AbstractRDFService {
 	//@formatter:off
 	private static final String
 			JOB_STATUS_PROP = NS.DM2E + "status",
-			JOB_LOGENTRY_PROP = NS.DM2E + "hasLogEntry";
+			JOB_LOGENTRY_PROP = NS.DM2E + "hasLogEntry",
+			SERVICE_DESCRIPTION_RESOURCE = Config.getString("dm2e.service.config.description_resource");
 	//@formatter:on
+	
+	@Override
+	public String getServiceDescriptionResourceName() {
+		return SERVICE_DESCRIPTION_RESOURCE;
+	}	
 
 	@GET
 	@Path("/{resourceID}")
