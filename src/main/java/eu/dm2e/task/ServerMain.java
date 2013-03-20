@@ -15,23 +15,10 @@ import javax.ws.rs.core.UriBuilder;
 
 public class ServerMain {
 
-    private static int getPort(int defaultPort) {
-        String httpPort = System.getProperty("eu.dm2e.task.config.port");
-        if (null != httpPort) {
-            try {
-                return Integer.parseInt(httpPort);
-            } catch (NumberFormatException e) {
-            }
-        }
-        return defaultPort;
-    }
-
 	static URI getBaseURI() {
 		return UriBuilder.fromUri(
 				Config.config.getString("dm2e.task.base_uri", "http://localhost:9110/")).build();
 	}
-
-    public static final URI BASE_URI = getBaseURI();
     
     protected static HttpServer startServer() throws IOException {
         final Map<String, String> initParams = new HashMap<String, String>();
@@ -42,7 +29,7 @@ public class ServerMain {
 				+ "eu.dm2e.task.util");
 
         System.out.println("Starting grizzly2...");
-        return GrizzlyWebContainerFactory.create(BASE_URI, initParams);
+        return GrizzlyWebContainerFactory.create(getBaseURI(), initParams);
     }
     
     public static void main(String[] args) throws IOException {
@@ -56,7 +43,7 @@ public class ServerMain {
         HttpServer httpServer = startServer();
         System.out.println(String.format("OmNom started with WADL available at "
                 + "%sapplication.wadl\nHit enter to stop it...",
-                BASE_URI));
+                getBaseURI()));
         System.in.read();
         httpServer.stop();
         System.exit(0);
