@@ -1,14 +1,14 @@
-<!-- Tufts VUE 3.1.1 concept-map (service-flow.vue) 2013-03-19 -->
+<!-- Tufts VUE 3.1.1 concept-map (service-flow.vue) 2013-03-20 -->
 <!-- Tufts VUE: http://vue.tufts.edu/ -->
 <!-- Do Not Remove: VUE mapping @version(1.1) jar:file:/usr/share/java/vue/VUE.jar!/tufts/vue/resources/lw_mapping_1_1.xml -->
-<!-- Do Not Remove: Saved date Tue Mar 19 15:22:05 CET 2013 by kb on platform Linux 3.8.2-1-ARCH in JVM 1.7.0_17-b02 -->
+<!-- Do Not Remove: Saved date Wed Mar 20 13:58:19 CET 2013 by kb on platform Linux 3.8.2-1-ARCH in JVM 1.7.0_17-b02 -->
 <!-- Do Not Remove: Saving version @(#)VUE: built March 16 2011 at 1142 by vue on Linux 2.4.21-63.EL i386 JVM 1.5.0_06-b05(bits=32) -->
 <?xml version="1.0" encoding="US-ASCII"?>
 <LW-MAP xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="none" ID="0" label="service-flow.vue"
     created="1363691560078" x="0.0" y="0.0" width="1.4E-45"
     height="1.4E-45" strokeWidth="0.0" autoSized="false">
-    <resource referenceCreated="1363702927362" size="26075"
+    <resource referenceCreated="1363784300215" size="26075"
         spec="/home/kb/workspace/dm2e-task/notes/service-flow.vue"
         type="1" xsi:type="URLResource">
         <title>service-flow.vue</title>
@@ -67,7 +67,7 @@
         <shape xsi:type="rectangle"/>
     </child>
     <child ID="9" label="listen for job URIs" layerID="1"
-        created="1363691676938" x="391.5" y="77.5" width="85.0"
+        created="1363691676938" x="392.0" y="77.5" width="84.0"
         height="69.0" strokeWidth="1.0" autoSized="false"
         controlCount="0" arrowState="2" xsi:type="link">
         <strokeColor>#404040</strokeColor>
@@ -165,7 +165,7 @@
         <shape xsi:type="rectangle"/>
     </child>
     <child ID="14" label="sends config URI" layerID="1"
-        created="1363691773150" x="340.25824" y="282.5" width="83.0"
+        created="1363691773150" x="340.75824" y="282.5" width="82.0"
         height="69.0" strokeWidth="1.0" autoSized="false"
         controlCount="1" arrowState="2" xsi:type="link">
         <strokeColor>#404040</strokeColor>
@@ -188,7 +188,7 @@
         <ctrlPoint0 x="359.0" y="319.0" xsi:type="point"/>
     </child>
     <child ID="15" label="receives job URI" layerID="1"
-        created="1363691821769" x="427.04947" y="282.5" width="79.0"
+        created="1363691821769" x="427.54947" y="282.5" width="78.0"
         height="69.0" strokeWidth="1.0" autoSized="false"
         controlCount="1" arrowState="2" xsi:type="link">
         <strokeColor>#404040</strokeColor>
@@ -253,8 +253,8 @@
         <ctrlPoint0 x="247.0" y="290.0" xsi:type="point"/>
     </child>
     <child ID="20" label="returns config URI" layerID="1"
-        created="1363692036240" x="178.93233" y="171.5"
-        width="200.56767" height="192.63089" strokeWidth="1.0"
+        created="1363692036240" x="179.43233" y="171.5"
+        width="200.06767" height="192.63089" strokeWidth="1.0"
         autoSized="false" controlCount="1" arrowState="2" xsi:type="link">
         <strokeColor>#404040</strokeColor>
         <textColor>#404040</textColor>
@@ -322,7 +322,7 @@
         <ctrlPoint0 x="521.0" y="218.0" xsi:type="point"/>
     </child>
     <child ID="23" label="publishes job URI" layerID="1"
-        created="1363692264592" x="390.5" y="172.5" width="83.0"
+        created="1363692264592" x="391.0" y="172.5" width="82.0"
         height="84.0" strokeWidth="1.0" autoSized="false"
         controlCount="0" arrowState="2" xsi:type="link">
         <strokeColor>#404040</strokeColor>
@@ -367,7 +367,7 @@
         <ctrlPoint0 x="565.8273" y="50.833332" xsi:type="point"/>
     </child>
     <child ID="25" label="get current status" layerID="1"
-        created="1363692334849" x="449.5" y="187.5" width="187.63373"
+        created="1363692334849" x="449.5" y="187.5" width="187.13373"
         height="178.01663" strokeWidth="1.0" autoSized="false"
         controlCount="1" arrowState="2" xsi:type="link">
         <strokeColor>#404040</strokeColor>
@@ -448,7 +448,7 @@
     <PathwayList currentPathway="0" revealerIndex="-1">
         <pathway ID="0" label="Untitled Pathway" created="1363691560077"
             x="0.0" y="0.0" width="1.4E-45" height="1.4E-45"
-            strokeWidth="0.0" autoSized="false" currentIndex="-1" open="true">
+            strokeWidth="0.0" autoSized="false" currentIndex="0" open="true">
             <strokeColor>#B3CC33CC</strokeColor>
             <textColor>#000000</textColor>
             <font>SansSerif-plain-14</font>

@@ -21,4 +21,4 @@
 @prefix fn:      <http://www.w3.org/2005/xpath-functions#> .
 @prefix cc:      <http://creativecommons.org/ns#> .
 
-[] :foo :bar .
+# [] :foo :bar .

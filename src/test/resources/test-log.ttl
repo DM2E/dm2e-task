@@ -26,5 +26,5 @@
 []  a log:LogEntry ;
     log:source <http://omnom.dm2e.eu/service/foobar> ;
     log:context <http://omnom.dm2e.eu/workflow/1/slot/3> ;
-    log:level log:DEBUG ;
+    log:level "DEBUG" ;
     log:message "This is the message yay" .
