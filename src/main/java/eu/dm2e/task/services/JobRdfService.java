@@ -114,8 +114,8 @@ public class JobRdfService extends AbstractRDFService {
 		return null;
 	}
 
-	public JobStatusConstants getJobStatusInternal(String jobUriStr) throws Exception
-			 {
+	public JobStatusConstants getJobStatusInternal(String jobUriStr)
+			throws Exception {
 		GrafeoImpl g = new GrafeoImpl();
 		g.readFromEndpoint(NS.ENDPOINT, jobUriStr);
 		Model jenaModel = g.getModel();
@@ -130,8 +130,7 @@ public class JobRdfService extends AbstractRDFService {
 
 	@GET
 	@Path("/{id}/status")
-	public Response getJobStatus(@PathParam("id") String id)
-			 {
+	public Response getJobStatus(@PathParam("id") String id) {
 		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/status$", "");
 		try {
 			return Response.ok().entity(getJobStatusInternal(resourceUriStr).toString()).build();
@@ -143,8 +142,7 @@ public class JobRdfService extends AbstractRDFService {
 	@PUT
 	@Path("/{id}/status")
 	@Consumes(MediaType.WILDCARD)
-	public Response updateJobStatus(@PathParam("id") String id, String newStatus)
-			 {
+	public Response updateJobStatus(@PathParam("id") String id, String newStatus) {
 		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/status$", "");
 
 		// validate if this is a valid status
@@ -220,8 +218,7 @@ public class JobRdfService extends AbstractRDFService {
 	@POST
 	@Path("/{id}/log")
 	@Consumes(MediaType.TEXT_PLAIN)
-	public Response addLogEntryAsText(String logString)
-			 {
+	public Response addLogEntryAsText(String logString) {
 
 		// String resourceUri = getRequestUriWithoutQuery();
 		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/log$", "");
@@ -271,8 +268,7 @@ public class JobRdfService extends AbstractRDFService {
 	// DM2E_MediaType.APPLICATION_RDF_TRIPLES,
 	// DM2E_MediaType.APPLICATION_RDF_XML,
 	// })
-	public Response listLogEntries(@QueryParam("minLevel") String minLevelStr)
-			 {
+	public Response listLogEntries(@QueryParam("minLevel") String minLevelStr) {
 
 		String resourceUriStr = getRequestUriWithoutQuery().toString().replaceAll("/log$", "");
 		String whereClause = "?s ?p ?o.\n ?s a <" + NS.DM2ELOG + "LogEntry>. \n";

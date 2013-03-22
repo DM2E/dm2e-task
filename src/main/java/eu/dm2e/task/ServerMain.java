@@ -26,6 +26,8 @@ public class ServerMain {
 		initParams.put("com.sun.jersey.config.property.packages",
 				"eu.dm2e.task.services"
 				+";"
+				+ "eu.dm2e.task.services.xslt"
+				+";"
 				+ "eu.dm2e.task.util");
 
         System.out.println("Starting grizzly2...");

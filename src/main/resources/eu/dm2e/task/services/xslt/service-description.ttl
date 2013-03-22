@@ -1,5 +1,5 @@
-@prefix dc:      <http://purl.org/dc/elements/1.1/> .
-@prefix :        <http://onto.dm2e.eu/> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix : <http://onto.dm2e.eu/> .
 @prefix ogp:     <http://ogp.me/ns#> .
 @prefix edm:     <http://www.europeana.eu/schemas/edm/> .
 @prefix geo:     <http://www.w3.org/2003/01/geo/wgs84_pos#> .
@@ -21,7 +21,7 @@
 @prefix fn:      <http://www.w3.org/2005/xpath-functions#> .
 @prefix cc:      <http://creativecommons.org/ns#> .
 @prefix dm2e:        <http://onto.dm2e.eu/onto#> .
-@prefix dm2e_types: <http://onto.dm2e.eu/types#> .
+@prefix dm2e_types: <http://onto.dm2e.eu/types/> .
 @prefix xslt_service: <http://omnom.dm2e.eu/service/xslt#> .
 
 []	rdf:type dm2e:WebService ,
