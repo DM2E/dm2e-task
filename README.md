@@ -1,10 +1,4 @@
-dm2e-task
-=========
+dm2e-task (obsolete)
+======================
 
-Task Framework for DM2E
-
-Requires
-* RabbitMQ
-* Mongo
-* Jongo
-* Jersey
+Don't use this. See dm2e-ws.
