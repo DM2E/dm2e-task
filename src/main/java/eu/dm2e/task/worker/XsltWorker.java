@@ -41,27 +41,25 @@ import eu.dm2e.ws.grafeo.jena.GrafeoImpl;
  */
 public class XsltWorker extends AbstractWorker {
 
-	// Constants from the configuration
-	private static final String SERVICE_RABBIT_QUEUE = Config
-		.getString("dm2e.service.xslt.worker_queue");
 	private static final String SERVICE_URI = Config.getString("dm2e.service.xslt.base_uri");
-
+	private static final String FILE_SERVICE_URI = Config.getString("dm2e.service.file.base_uri");
 	private static final String NS_XSLT_SERVICE = Config.getString("dm2e.service.xslt.namespace");
+	
 	private static final String PROPERTY_XML_SOURCE = NS_XSLT_SERVICE + "xmlSource";
 	private static final String PROPERTY_XSLT_SOURCE = NS_XSLT_SERVICE + "xsltSource";
-
-	private static final String FILE_SERVICE_URI = Config.getString("dm2e.service.file.base_uri");
+	
+	private final String jobUri;
+	public String getJobUri() { return jobUri; }
+	
+	public XsltWorker(String jobUri) {
+		this.jobUri = jobUri;
+	}
 
 	// The HTTP REST client
 	private Client client = new Client();
 
 	// Logging
 	Logger log = Logger.getLogger(getClass().getName());
-
-	@Override
-	public String getRabbitQueueName() {
-		return SERVICE_RABBIT_QUEUE;
-	}
 
 	@Override
 	public String getServiceUri() {
@@ -74,8 +72,7 @@ public class XsltWorker extends AbstractWorker {
 	}
 
 	@Override
-	public void handleMessage(String jobUri)
-			throws InterruptedException {
+	public void run() {
 
 		// Web Resource for the file
 		WebResource fileResource = getClient().resource(FILE_SERVICE_URI);

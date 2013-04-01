@@ -24,7 +24,6 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.NodeIterator;
 
 import eu.dm2e.task.model.JobStatusConstants;
-import eu.dm2e.ws.Config;
 import eu.dm2e.ws.DM2E_MediaType;
 import eu.dm2e.ws.NS;
 import eu.dm2e.ws.grafeo.GLiteral;
@@ -48,14 +47,8 @@ public class JobRdfService extends AbstractRDFService {
 	//@formatter:off
 	private static final String
 			JOB_STATUS_PROP = NS.DM2E + "status",
-			JOB_LOGENTRY_PROP = NS.DM2E + "hasLogEntry",
-			SERVICE_DESCRIPTION_RESOURCE = Config.getString("dm2e.service.config.description_resource");
+			JOB_LOGENTRY_PROP = NS.DM2E + "hasLogEntry";
 	//@formatter:on
-
-	@Override
-	public String getServiceDescriptionResourceName() {
-		return SERVICE_DESCRIPTION_RESOURCE;
-	}
 
 	@GET
 	@Path("/{resourceID}")

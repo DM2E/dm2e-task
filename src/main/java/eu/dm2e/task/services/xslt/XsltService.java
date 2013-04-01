@@ -16,12 +16,11 @@ import javax.ws.rs.core.UriInfo;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.rabbitmq.client.Channel;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-import eu.dm2e.task.util.RabbitConnection;
+import eu.dm2e.task.worker.XsltExecutorService;
 import eu.dm2e.ws.Config;
 import eu.dm2e.ws.NS;
 import eu.dm2e.ws.grafeo.Grafeo;
@@ -32,8 +31,6 @@ import eu.dm2e.ws.services.data.AbstractRDFService;
 public class XsltService extends AbstractRDFService {
 	
 	private Logger log = Logger.getLogger(getClass().getName());
-	private static final String SERVICE_RABBIT_QUEUE = Config.getString("dm2e.service.xslt.worker_queue");
-	private static final String SERVICE_DESCRIPTION_RESOURCE = Config.getString("dm2e.service.xslt.description_resource");
 	
 //	private static final String NS_XSLT_SERVICE = Config.getString("dm2e.service.xslt.namespace");
 	private static final String PROPERTY_HAS_WEB_SERVICE_CONFIG = NS.DM2E + "hasWebServiceConfig";
@@ -41,11 +38,6 @@ public class XsltService extends AbstractRDFService {
 	// TODO shouldnot be hardwired
 	private static final String URI_JOB_SERVICE = Config.getString("dm2e.service.job.base_uri");
 	private static final String URI_CONFIG_SERVICE = Config.getString("dm2e.service.config.base_uri");
-	
-	@Override
-	public String getServiceDescriptionResourceName() {
-		return SERVICE_DESCRIPTION_RESOURCE;
-	}
 	
 	/**
 	 * Describes this service.
@@ -93,16 +85,7 @@ public class XsltService extends AbstractRDFService {
 		
 		// post the job to the worker
 		log.info("Posting the job to the worker queue");
-		byte[] messageBytes = jobUri.toString().getBytes();
-		Channel channel;
-		log.info(SERVICE_RABBIT_QUEUE);
-		try {
-			channel = RabbitConnection.getChannel();
-			channel.basicPublish("", SERVICE_RABBIT_QUEUE, null, messageBytes);
-			channel.close();
-		} catch (Exception e) {
-			return throwServiceError(e);
-		}
+		XsltExecutorService.INSTANCE.handleJobUri(jobUri.toString());
 		
 		// return location of the job
 		return Response.created(jobUri).entity(getResponseEntity(g)).build();

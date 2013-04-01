@@ -35,10 +35,10 @@
 	dc:description "XSLT transformation web service" ;
   	dm2e:requiredParam xslt_service:xmlSource ;
   	dm2e:requiredParam xslt_service:xsltSource ;
-    dm2e:outputParam xslt_service:output ;
+    dm2e:outputParam xslt_service:output .
     # the following wasn't necessary if the outputParam was defined as a
     # subclass of requiredParam and the validator/introspector did inference
-    dm2e:requiredParam xslt_service:output .
+#    dm2e:requiredParam xslt_service:output .
 xslt_service:xmlSource
 	a dm2e:InputParam , owl:ObjectProperty ;
     dm2e:paramName "xmlSource" ;
